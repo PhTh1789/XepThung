@@ -1,0 +1,21 @@
+# Môi trường ảo
+KLTN_2026/
+venv/
+env/
+
+# Cache của Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# File cấu hình môi trường
+.env
+
+#node module cho supabase CLI local
+node_modules
+supabase
+
+dist
+dist-ssr
+*.local
