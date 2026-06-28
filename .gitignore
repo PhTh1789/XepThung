@@ -1,0 +1,17 @@
+# --- Frontend ---
+frontEnd/**/node_modules/
+frontEnd/**/dist/
+frontEnd/**/*.env
+frontEnd/**/*.env.local
+frontEnd/**/*.env.production
+
+# --- Backend ---
+backEnd/**/venv/
+backEnd/**/__pycache__/
+backEnd/**/.env
+backEnd/**/KLTN_2026/
+backEnd/*.db
+
+# --- System ---
+.DS_Store
+docs/
