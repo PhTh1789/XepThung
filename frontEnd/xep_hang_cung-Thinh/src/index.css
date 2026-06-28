@@ -1,0 +1,143 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  :root, .dark {
+    --header-h: 48px;
+    --footer-h: 56px;
+    
+    @media (min-width: 640px) {
+      --header-h: 56px;
+    }
+
+    --text: #1a1c1e;
+    --text-h: #1a1c1e;
+    --text-secondary: #414754;
+    --bg: #fff;
+    
+    /* WIZARD SPACING TOKENS */
+    --wizard-content-px: 1.5rem; /* 24px */
+    
+    /* SHADCN/UI STANDARD TOKENS (Từ Figma) */
+    --background: #ffffff;
+    --foreground: #1a1c1e;
+    --card: #ffffff;
+    --card-foreground: #1a1c1e;
+    --popover: #ffffff;
+    --popover-foreground: #1a1c1e;
+    --primary: #0059bb;
+    --primary-foreground: #ffffff;
+    --secondary: #fd8b00;
+    --secondary-foreground: #ffffff;
+    --muted: #f3f3f6;
+    --muted-foreground: #414754;
+    --muted-hover: #eaebf0; /* Màu xám mát, sáng và trong trẻo hơn */
+    --accent: rgba(0, 89, 187, 0.05);
+    --accent-foreground: #0059bb;
+    --accent-hover: rgba(0, 89, 187, 0.08); /* Chỉ tăng nhẹ 3% opacity thay vì 10% để không bị tối */
+    --destructive: #ef4444; /* Màu đỏ báo lỗi đồng bộ hệ thống */
+    --destructive-foreground: #ffffff;
+    --warning-50: #fffbeb;
+    --warning-300: #fcd34d;
+    --warning-600: #d97706;
+    --warning-700: #b45309;
+    --success-50: #f0fdf4;
+    --success-100: #dcfce7;
+    --success-300: #86efac;
+    --success-600: #16a34a;
+    --success-700: #15803d;
+    --info-50: #eff6ff;
+    --info-100: #dbeafe;
+    --info-300: #93c5fd;
+    --info-700: #1d4ed8;
+    --info-800: #1e40af;
+    --border: #c1c6d7;
+    --input: #c1c6d7;
+    --ring: #0059bb;
+    --radius: 0.5rem;
+
+    /* Legacy tokens for App.tsx */
+    --code-bg: #f4f3ec;
+    --accent-bg: rgba(0, 89, 187, 0.1);
+    --accent-border: rgba(0, 89, 187, 0.5);
+    --secondary-legacy: #fd8b00;
+    --secondary-bg: rgba(253, 139, 0, 0.1);
+    --shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    --sans: "Inter", system-ui, "Segoe UI", sans-serif;
+    --heading: "Inter", system-ui, "Segoe UI", sans-serif;
+    --mono: ui-monospace, Consolas, monospace;
+
+    font: 16px/145% var(--sans);
+    letter-spacing: 0.18px;
+    color-scheme: light; /* Single theme lock */
+    color: var(--text);
+    background: var(--bg);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  @media (max-width: 1024px) {
+    :root, .dark {
+      font-size: 16px;
+    }
+  }
+}
+
+#root {
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
