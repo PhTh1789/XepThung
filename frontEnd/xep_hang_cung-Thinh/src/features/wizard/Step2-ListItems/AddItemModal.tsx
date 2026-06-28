@@ -25,13 +25,11 @@ import {
   DialogFooter,
 } from "@/components/ui/Dialog";
 import { ItemSchema, type ItemInput, type Item } from "@/schemas";
-import { ITEM_COLORS } from "@/lib/mockData";
 import { useCargoStore } from "@/store/useCargoStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { toBaseLength, toDisplayLength, toBaseWeight, toDisplayWeight } from "@/utils/unitConverter";
+import { toBaseWeight, toDisplayWeight } from "@/utils/unitConverter";
 import { isItemOversized, isItemOverweight } from "@/utils/cargoValidation";
 import { LIMITS } from "@/lib/constants";
-import { AppToast } from "@/utils/appToast";
 import { cn } from "@/lib/utils";
 import { DimensionFields } from "./DimensionFields";
 import { ColorSelector } from "./ColorSelector";
