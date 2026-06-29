@@ -2,7 +2,11 @@ import type { Truck } from "@/schemas";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useCargoStore } from "@/store/useCargoStore";
-import { formatLength, formatWeight, calculateVolumeM3 } from "@/utils/unitConverter";
+import {
+  formatLength,
+  formatWeight,
+  calculateVolumeM3,
+} from "@/utils/unitConverter";
 import { Truck as TruckIcon, Trash2 } from "lucide-react";
 import { AlertDialog } from "@/components/ui/AlertDialog";
 
@@ -24,17 +28,21 @@ export function TruckCard({ truck, isSelected, onSelect }: TruckCardProps) {
   }, []);
 
   // Volume calculation in m3
-  const volumeCubicMeters = calculateVolumeM3(truck.length, truck.width, truck.height).toFixed(1);
+  const volumeCubicMeters = calculateVolumeM3(
+    truck.length,
+    truck.width,
+    truck.height,
+  ).toFixed(1);
 
   return (
     <>
       <button
         onClick={() => onSelect(truck)}
         className={cn(
-          "group flex flex-col items-start gap-4 w-full h-auto rounded-[24px] p-4 transition-all duration-300 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 relative",
+          "group flex flex-col items-start gap-2 w-full h-auto rounded-[24px] p-3 transition-all duration-300 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 relative",
           isSelected
             ? "bg-primary/10 border-2 border-primary shadow-selected"
-            : "bg-card border border-border hover:-translate-y-1 hover:shadow-md"
+            : "bg-card border border-border hover:-translate-y-1 hover:shadow-md",
         )}
       >
         {/* Delete Button (Only for User Saved Trucks) */}
@@ -53,21 +61,21 @@ export function TruckCard({ truck, isSelected, onSelect }: TruckCardProps) {
         )}
 
         {/* Truck Image Container */}
-        <div className="relative w-full flex-1 min-h-[100px] bg-muted/50 rounded-xl overflow-hidden flex items-center justify-center mix-blend-multiply py-4">
-        {/* Skeleton Loader */}
-        {!imageLoaded && (
-          <div className="absolute inset-0 bg-slate-200 animate-pulse rounded-xl" />
-        )}
-        
-        {/* Image */}
-        <div 
-          className={cn(
-            "w-full h-full flex items-center justify-center transition-opacity duration-300", 
-            imageLoaded ? "opacity-100" : "opacity-0"
+        <div className="relative w-full min-h-[80px] bg-muted/50 rounded-xl overflow-hidden flex items-center justify-center mix-blend-multiply py-2">
+          {/* Skeleton Loader */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-slate-200 animate-pulse rounded-xl" />
           )}
-        >
-          {/* CÁCH 1: Dùng ảnh thật với fallback bằng State (Đã comment) */}
-          {/* 
+
+          {/* Image */}
+          <div
+            className={cn(
+              "w-full h-full flex items-center justify-center transition-opacity duration-300",
+              imageLoaded ? "opacity-100" : "opacity-0",
+            )}
+          >
+            {/* CÁCH 1: Dùng ảnh thật với fallback bằng State (Đã comment) */}
+            {/* 
           <img
             src={hasError ? `https://via.placeholder.com/400x300?text=${encodeURIComponent(truck.name)}` : "http://localhost:3845/assets/525b7a858736075566c2467e4653a8774baa74aa.png"}
             alt={truck.name}
@@ -79,51 +87,61 @@ export function TruckCard({ truck, isSelected, onSelect }: TruckCardProps) {
           />
           */}
 
-          {/* CÁCH 2: Dùng trực tiếp placeholder UI tĩnh (Active mặc định) */}
-          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground opacity-60">
-            <TruckIcon className="w-12 h-12 mb-2" />
-            <span className="font-bold text-center px-4 leading-tight text-[13px]">
-              {truck.name}
+            {/* CÁCH 2: Dùng trực tiếp placeholder UI tĩnh (Active mặc định) */}
+            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground opacity-60">
+              <TruckIcon className="w-8 h-8 mb-2" />
+              {/* <span className="font-bold text-center px-4 leading-tight text-[13px]">
+                {truck.name}
+              </span> */}
+            </div>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="w-full text-center shrink-0">
+          <h3 className="font-bold text-[16px] sm:text-[16px] leading-4 text-foreground line-clamp-1 px-1">
+            {truck.name}
+          </h3>
+        </div>
+
+        {/* Details — layout ngang desktop, ẩn label mobile */}
+        <div className="w-full flex flex-col pb-2 shrink-0 gap-0">
+          {/* Kích thước */}
+          <div className="flex items-baseline justify-between border-b border-border py-1.5 gap-2">
+            {/* Label: ẩn trên mobile, hiện desktop */}
+            <span className="hidden sm:block text-[14px] font-medium text-muted-foreground  tracking-wide shrink-0">
+              Kích thước
+            </span>
+            <span className="font-bold text-[14px] sm:text-[14px] text-foreground whitespace-nowrap truncate">
+              {formatLength(truck.length, settings.length_unit)}×
+              {formatLength(truck.width, settings.length_unit)}×
+              {formatLength(truck.height, settings.length_unit)}{" "}
+              {settings.length_unit}
+            </span>
+          </div>
+
+          {/* Thể tích */}
+          <div className="flex items-baseline justify-between  py-1.5 gap-2">
+            <span className="hidden sm:block text-[14px] font-medium text-muted-foreground  tracking-wide shrink-0">
+              Thể tích
+            </span>
+            <span className="font-bold text-[14px] sm:text-[14px] text-foreground">
+              ~{volumeCubicMeters} m³
+            </span>
+          </div>
+
+          {/* Tải trọng */}
+          <div className="flex items-baseline justify-between py-1.5 gap-2">
+            <span className="hidden sm:block text-[14px] font-medium text-muted-foreground  tracking-wide shrink-0">
+              Tải trọng
+            </span>
+            <span className="font-bold text-[14px] sm:text-[14px] text-primary">
+              {formatWeight(truck.max_weight, settings.weight_unit)}{" "}
+              {settings.weight_unit}
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Title */}
-      <div className="w-full text-center shrink-0 mt-2">
-        <h3 className="font-bold text-[18px] sm:text-[20px] leading-6 text-foreground line-clamp-1 px-2">
-          {truck.name}
-        </h3>
-      </div>
-
-      {/* Details */}
-      <div className="w-full flex flex-col pb-2 shrink-0">
-        <div className="flex flex-wrap justify-between items-center border-b border-border py-1.5 gap-x-2">
-          <span className="font-medium text-[16px] text-muted-foreground">
-            Kích thước:
-          </span>
-          <span className="font-bold text-[16px] text-foreground text-right">
-            {formatLength(truck.length, settings.length_unit)} x {formatLength(truck.width, settings.length_unit)} x {formatLength(truck.height, settings.length_unit)} {settings.length_unit}
-          </span>
-        </div>
-        <div className="flex flex-wrap justify-between items-center py-1.5 gap-x-2 border-b border-transparent">
-          <span className="font-medium text-[16px] text-muted-foreground">
-            Thể tích:
-          </span>
-          <span className="font-bold text-[16px] text-foreground text-right">
-            ~{volumeCubicMeters} m³
-          </span>
-        </div>
-        <div className="flex flex-wrap justify-between items-center py-1.5 gap-x-2 mt-1">
-          <span className="font-medium text-[16px] text-muted-foreground">
-            Tải trọng:
-          </span>
-          <span className="font-bold text-[16px] text-primary text-right">
-            {formatWeight(truck.max_weight, settings.weight_unit)} {settings.weight_unit}
-          </span>
-        </div>
-      </div>
-    </button>
+      </button>
       <AlertDialog
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}

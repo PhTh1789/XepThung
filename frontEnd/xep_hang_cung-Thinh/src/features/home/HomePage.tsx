@@ -176,7 +176,7 @@ export function HomePage() {
       <div className="w-full bg-muted border-t border-border py-6 flex justify-center">
         <div className="w-full max-w-[1280px] px-6 sm:px-10 flex flex-col sm:flex-row justify-between items-center gap-4">
           <span className="font-black text-sm text-foreground tracking-[0.7px]">
-            © 2026 Xep hang cung Thinh - NLU - KLTN 2026
+            © 2026 Xếp Thùng - NLU - KLTN 2026
           </span>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">Điều khoản</a>
