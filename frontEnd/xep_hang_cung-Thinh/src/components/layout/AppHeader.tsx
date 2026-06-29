@@ -8,7 +8,14 @@
  *   - Cargo data (items): useCargoStore (granular selector)
  */
 import { useState, useRef, useEffect } from "react";
-import { User, Settings, LogOut, History, ChevronDown, Boxes, Package  } from "lucide-react";
+import {
+  User,
+  Settings,
+  LogOut,
+  History,
+  ChevronDown,
+  Package,
+} from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCargoStore } from "@/store/useCargoStore";
@@ -18,29 +25,34 @@ import { AppToast } from "@/utils/appToast";
 
 export function AppHeader() {
   // Granular selectors — mỗi selector chỉ re-render khi đúng slice thay đổi
-  const currentStep   = useAppStore((s) => s.currentStep);
-  const openModal     = useAppStore((s) => s.openModal);
+  const currentStep = useAppStore((s) => s.currentStep);
+  const openModal = useAppStore((s) => s.openModal);
   const setCurrentStep = useAppStore((s) => s.setCurrentStep);
   const closeAllModals = useAppStore((s) => s.closeAllModals);
 
-  const userRole      = useAuthStore((s) => s.userRole);
-  const supabaseUser  = useAuthStore((s) => s.supabaseUser);
+  const userRole = useAuthStore((s) => s.userRole);
+  const supabaseUser = useAuthStore((s) => s.supabaseUser);
   const setExplicitLogout = useAuthStore((s) => s.setExplicitLogout);
 
-  const items         = useCargoStore((s) => s.items);
-  const resetSession  = useCargoStore((s) => s.resetSession);
+  const items = useCargoStore((s) => s.items);
+  const resetSession = useCargoStore((s) => s.resetSession);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLeaveGuard, setShowLeaveGuard] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [pendingTarget, setPendingTarget] = useState<"home" | "history" | null>(null);
+  const [pendingTarget, setPendingTarget] = useState<"home" | "history" | null>(
+    null,
+  );
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const displayName = supabaseUser?.email?.split("@")[0] ?? "";
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     };
@@ -82,7 +94,9 @@ export function AppHeader() {
       return;
     }
 
-    const isCurrentlyInWizard = ["step1", "step2", "step3"].includes(currentStep);
+    const isCurrentlyInWizard = ["step1", "step2", "step3"].includes(
+      currentStep,
+    );
 
     if (target === "wizard") {
       if (!isCurrentlyInWizard) {
@@ -181,8 +195,8 @@ export function AppHeader() {
                 userRole === "member"
                   ? `Đang đăng nhập: ${supabaseUser?.email}`
                   : userRole === "guest"
-                  ? "Đang dùng với tư cách Khách"
-                  : "Đăng nhập / Đăng ký"
+                    ? "Đang dùng với tư cách Khách"
+                    : "Đăng nhập / Đăng ký"
               }
             >
               {userRole === "member" ? (
@@ -193,7 +207,9 @@ export function AppHeader() {
                   <span className="hidden sm:block text-[13px] font-semibold max-w-[80px] md:max-w-[120px] truncate">
                     {displayName}
                   </span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+                  />
                 </>
               ) : userRole === "guest" ? (
                 <>
@@ -210,14 +226,19 @@ export function AppHeader() {
             {dropdownOpen && userRole === "member" && (
               <div className="absolute right-0 top-full mt-2 w-52 bg-background border border-border rounded-xl shadow-modal z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-border">
-                  <p className="text-[11px] text-muted-foreground">Đăng nhập với</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Đăng nhập với
+                  </p>
                   <p className="text-[13px] font-semibold text-foreground truncate">
                     {supabaseUser?.email}
                   </p>
                 </div>
                 <div className="py-1">
                   <button
-                    onClick={() => { setDropdownOpen(false); handleNavigate("history"); }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      handleNavigate("history");
+                    }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors"
                   >
                     <History className="w-4 h-4 text-muted-foreground" />
