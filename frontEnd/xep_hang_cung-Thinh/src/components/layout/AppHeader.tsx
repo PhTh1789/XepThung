@@ -8,7 +8,7 @@
  *   - Cargo data (items): useCargoStore (granular selector)
  */
 import { useState, useRef, useEffect } from "react";
-import { User, Settings, LogOut, History, ChevronDown } from "lucide-react";
+import { User, Settings, LogOut, History, ChevronDown, Boxes, Package  } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCargoStore } from "@/store/useCargoStore";
@@ -121,11 +121,9 @@ export function AppHeader() {
           className="flex gap-2 items-center cursor-pointer group"
           onClick={() => handleNavigate("home")}
         >
-          <div className="w-6 h-6 bg-primary rounded-sm flex items-center justify-center overflow-hidden">
-            <div className="w-3 h-3 bg-white rounded-sm rotate-45 group-hover:scale-110 transition-transform" />
-          </div>
+          <Package className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
           <span className="font-bold text-lg sm:text-2xl text-primary leading-8">
-            XepHangCungThinh
+            Xếp Thùng
           </span>
         </div>
 

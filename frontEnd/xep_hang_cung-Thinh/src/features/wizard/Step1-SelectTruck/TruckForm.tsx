@@ -130,7 +130,7 @@ export function TruckForm({ isSelected, onActivate }: TruckFormProps) {
             <FieldError message={errors.name?.message} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <label className="text-[14px] font-bold text-muted-foreground truncate">
                 Dài ({settings.length_unit})

@@ -15,7 +15,7 @@ import { HeaderActions } from "./HeaderActions";
 import { Step2Summary } from "./Step2Summary";
 import { ItemPresets } from "./ItemPresets";
 import { ItemsTable } from "./ItemsTable";
-import { AddItemModal } from "./AddItemModal";
+import { AddItemModal } from "./ModalAddItem";
 import type { Item } from "@/schemas";
 
 export function Step2ListItems() {
@@ -47,7 +47,7 @@ export function Step2ListItems() {
   return (
     <div className="flex flex-col gap-4">
       {/* Sticky Header Group */}
-      <div className="sticky top-0 z-30 flex flex-col gap-2 bg-background/85 backdrop-blur-xl py-2 px-4 sm:px-[var(--wizard-content-px)] -mx-4 sm:-mx-[var(--wizard-content-px)] -mt-4 sm:-mt-[var(--wizard-content-px)] border-b border-border shadow-sm rounded-t-2xl">
+      <div className="sticky top-0 z-30 flex flex-col gap-1.5 bg-background/85 backdrop-blur-xl py-1.5 px-4 sm:px-[var(--wizard-content-px)] -mx-4 sm:-mx-[var(--wizard-content-px)] -mt-4 sm:-mt-[var(--wizard-content-px)] border-b border-border shadow-sm rounded-t-2xl">
         <div className="border-b border-border pb-2">
           <Step2Summary />
         </div>

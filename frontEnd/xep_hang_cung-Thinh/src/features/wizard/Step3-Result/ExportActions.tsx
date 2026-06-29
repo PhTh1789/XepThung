@@ -62,7 +62,7 @@ export function ExportActions({ sceneRef, fallbackResult }: ExportActionsProps) 
       // Tiêu đề
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(18);
-      pdf.text("Kết Quả Xếp Hàng — XepHangCungThinh", margin, margin + 5);
+      pdf.text("Kết Quả Xếp Hàng — Xếp Thùng", margin, margin + 5);
 
       // Thông số tóm tắt
       pdf.setFont("helvetica", "normal");

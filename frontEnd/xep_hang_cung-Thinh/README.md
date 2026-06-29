@@ -1,73 +1,18 @@
-# React + TypeScript + Vite
+# Xếp Thùng
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Giải pháp hỗ trợ tối ưu hóa không gian xếp hàng hóa 3D thông minh, dễ dàng và hiệu quả.
 
-Currently, two official plugins are available:
+## Về Dự Án
+Xếp Thùng là 1 dự án cá nhân do sinh viên Nguyễn Phát Thịnh - ngành Hệ thống thông tin - trường Đại học Nông Lâm TP.HCM thực hiện cho Khóa luận tốt nghiệp năm 2026.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Xếp Thùng mong muốn là 1 sản phẩm hỗ trợ tài xế và doanh nghiệp logistics lên kế hoạch sắp xếp hàng hóa lên xe tải/container một cách trực quan, tránh lãng phí không gian và thời gian, qua đó tối ưu chi phí vận hành và tăng hiệu quả công việc.
 
-## React Compiler
+## Truy Cập
+- Website chính thức: [xepthung.tech](https://xepthung.tech)
+- Sản phẩm được phát triển nhằm hỗ trợ quá trình làm việc thực tế cho người dùng Việt Nam.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Tính Năng Nổi Bật
+- **Mô phỏng 3D**: Trực quan hóa cách xếp hàng từng bước.
+- **Tối ưu theo nhiều loại xe**: Cấu hình xe tải tùy chỉnh.
+- **Dễ sử dụng**: Giao diện thân thiện với người dùng. Các tính năng chính dễ dàng sử dụng ngay cả với người không có kiến thức về logistics.
+- **Không tốn phí**: Sản phẩm hoàn toàn miễn phí, chỉ yêu cầu đăng ký tài khoản để sử dụng toàn bộ tính năng. 
