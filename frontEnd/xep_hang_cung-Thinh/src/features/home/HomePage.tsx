@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { ArrowRight, Box, Cuboid, MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ContactSection } from "./ContactSection";
-
+import imgHome from "@/assets/img_home.png";
 export function HomePage() {
   const userRole       = useAuthStore((s) => s.userRole);
   const setCurrentStep = useAppStore((s) => s.setCurrentStep);
@@ -56,15 +56,13 @@ export function HomePage() {
           </div>
         </div>
         
-        {/* Right: 3D Simulation Placeholder */}
-        <div className="relative w-full aspect-video md:aspect-square bg-muted/50 rounded-[24px] border border-border shadow-md flex items-center justify-center overflow-hidden order-1 md:order-2">
-          {/* Box Placeholder for 3D simulation image */}
-          <div className="flex flex-col items-center gap-4 opacity-40">
-            <Cuboid className="w-20 h-20 text-muted-foreground" />
-            <span className="text-muted-foreground font-medium text-lg px-4 text-center">
-              3D Simulation Image Placeholder
-            </span>
-          </div>
+        <div className="relative w-full aspect-video md:aspect-square rounded-[24px] shadow-md flex items-center justify-center overflow-hidden order-1 md:order-2">
+          {/* 3D simulation image */}
+          <img 
+            src={imgHome} 
+            alt="3D Simulation" 
+            className="w-full h-full object-cover" 
+          />
         </div>
       </div>
 
