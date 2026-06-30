@@ -2,6 +2,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { ArrowRight, Box, Cuboid, MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ContactSection } from "./ContactSection";
 
 export function HomePage() {
   const userRole       = useAuthStore((s) => s.userRole);
@@ -172,6 +173,9 @@ export function HomePage() {
         </div>
       </div>
 
+      {/* Contact Section */}
+      <ContactSection />
+
       {/* Footer */}
       <div className="w-full bg-muted border-t border-border py-6 flex justify-center">
         <div className="w-full max-w-[1280px] px-6 sm:px-10 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -181,7 +185,7 @@ export function HomePage() {
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">Điều khoản</a>
             <a href="#" className="hover:text-foreground transition-colors">Bảo mật</a>
-            <a href="#" className="hover:text-foreground transition-colors">Liên hệ</a>
+            <a href="#contact" className="hover:text-foreground transition-colors">Liên hệ</a>
           </div>
         </div>
       </div>
