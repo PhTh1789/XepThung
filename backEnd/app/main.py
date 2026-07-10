@@ -20,6 +20,13 @@ from app.core.config import get_settings
 from app.database.database import get_engine, get_session_factory, Base
 from app.database.seeder import run_all_seeders
 
+# Security & Limiter imports
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
+from app.core.limiter import limiter
+
 # Import các routers
 from app.api import optimizer, trucks, items, history
 
@@ -77,20 +84,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Đăng ký Rate Limiter vào app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CORS Middleware
 # ─────────────────────────────────────────────────────────────────────────────
 settings = get_settings()
 ALLOWED_ORIGINS = (
-    ["*"]
+    [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
     if settings.APP_ENV == "development"
     else [
-        "https://xep-hang-cung-thinh.vercel.app",
-        "http://localhost:5173",  # Vite dev server
+        "https://xepthung.tech",
+        "https://www.xepthung.tech",
+        "http://localhost:5173",  # Vite dev server (nếu chạy local mà connect tới prod backend)
     ]
 )
 
+# 1. CORS Middleware (Bỏ ["*"] khi đi kèm credentials=True)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -98,6 +114,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 2. Trusted Host Middleware (Chặn Host Header giả mạo)
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "xepthung.tech", "www.xepthung.tech"]
+app.add_middleware(
+    TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS
+)
+
+# 3. Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 # -----------------------------------------------------------------------------
@@ -144,7 +178,7 @@ app.include_router(history.router,   prefix=API_PREFIX)
 # ─────────────────────────────────────────────────────────────────────────────
 # Health Check – Root endpoint
 # ─────────────────────────────────────────────────────────────────────────────
-@app.get("/", tags=["Health"])
+@app.get("/health", tags=["Health"])
 def read_root():
     """Kiểm tra sức khỏe hệ thống."""
     return {

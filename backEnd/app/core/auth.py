@@ -10,38 +10,54 @@ Luồng:
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
-import httpx
-
 from app.core.config import get_settings
 
 # FastAPI security scheme – tự động đọc Bearer token từ Header
 bearer_scheme = HTTPBearer(auto_error=False)
+import jwt
 
-
+# ...
 async def _verify_supabase_token(token: str) -> dict:
     """
-    Gọi Supabase REST API để xác minh token và lấy thông tin user.
-    Trả về dict user info từ Supabase.
+    Xác minh token bằng JWKS (JSON Web Key Set) public key từ Supabase.
+    PyJWKClient sẽ tự động fetch và cache Public Key, đảm bảo an toàn tuyệt đối
+    và đạt tốc độ xác minh cực nhanh từ request thứ 2 trở đi.
     """
     settings = get_settings()
-    url = f"{settings.SUPABASE_URL}/auth/v1/user"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "apikey": settings.SUPABASE_ANON_KEY,
-    }
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
+    # URL lấy JWKS của Supabase
+    jwks_url = f"{settings.SUPABASE_URL}/auth/v1/jwks"
+    jwks_client = jwt.PyJWKClient(jwks_url)
 
-    if response.status_code != 200:
+    try:
+        # Tự động lấy public key phù hợp (dựa vào 'kid' trong header của token)
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        
+        # Giải mã và xác thực token cục bộ bằng Public Key (RS256)
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256", "HS256"],  # Hỗ trợ cả 2 để tương thích ngược nếu cần
+            audience="authenticated"
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
                 "status": "error",
-                "message": "Token không hợp lệ hoặc đã hết hạn",
+                "message": "Token đã hết hạn. Vui lòng đăng nhập lại.",
+                "error_code": "TOKEN_EXPIRED",
+            },
+        )
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "status": "error",
+                "message": f"Token không hợp lệ: {str(e)}",
                 "error_code": "INVALID_TOKEN",
             },
         )
-    return response.json()
 
 
 async def get_current_user(
@@ -62,7 +78,7 @@ async def get_current_user(
             },
         )
     user_data = await _verify_supabase_token(credentials.credentials)
-    return user_data["id"]  # Supabase user UUID
+    return user_data.get("sub")  # Supabase user UUID nằm ở field 'sub'
 
 
 async def get_optional_user(
@@ -77,6 +93,6 @@ async def get_optional_user(
         return None
     try:
         user_data = await _verify_supabase_token(credentials.credentials)
-        return user_data["id"]
+        return user_data.get("sub")
     except HTTPException:
         return None

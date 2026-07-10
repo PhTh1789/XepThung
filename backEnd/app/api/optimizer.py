@@ -13,8 +13,10 @@ Smart Auto-Routing:
 import logging
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+
+from app.core.limiter import limiter
 
 from app.core.config import get_settings
 from app.core.auth import get_optional_user
@@ -74,7 +76,9 @@ def evaluate_auto_mode(payload: OptimizeRequest) -> Literal["fast", "deep"]:
 # Endpoint: POST /optimize
 # ─────────────────────────────────────────────────────────────────────────────
 @router.post("", response_model=OptimizeResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("10/minute")
 async def run_optimize(
+    request: Request,
     payload: OptimizeRequest,
     db: Session = Depends(get_db),
     user_id: Optional[str] = Depends(get_optional_user),
