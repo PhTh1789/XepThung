@@ -10,6 +10,7 @@
  */
 
 import { apiClient } from "./apiClient";
+import type { AxiosRequestConfig } from "axios";
 import type { ApiSuccessResponse, HistoryData, HistoryDetailData, HistorySavePayload } from "./api.types";
 
 /**
@@ -52,7 +53,7 @@ export async function getHistoryDetail(
  */
 export async function saveHistory(
   payload: HistorySavePayload,
-  config?: import("axios").AxiosRequestConfig
+  config?: AxiosRequestConfig
 ): Promise<{ history_id: string }> {
   const response = await apiClient.post<
     ApiSuccessResponse<{ history_id: string }>
