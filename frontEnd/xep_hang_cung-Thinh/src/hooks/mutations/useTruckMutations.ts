@@ -10,7 +10,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteTruck } from "@/services/trucks.service";
 import { useCargoStore } from "@/store/useCargoStore";
-import type { Truck } from "@/schemas";
+
 import { AppToast } from "@/utils/appToast";
 
 /**

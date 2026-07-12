@@ -25,16 +25,14 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 import type { Truck, Item, Settings } from "@/schemas";
 import type { OptimizationData, HistoryDetailData } from "@/services/api.types";
-import { queryClient } from "@/lib/react-query";
-import { runOptimization } from "@/services/optimizer.service";
-import { ApiError } from "@/services/api.types";
+
 import { AppToast } from "@/utils/appToast";
 import {
   calculateVolumeM3,
   formatWeight,
   formatLength,
 } from "@/utils/unitConverter";
-import { buildPayloadHash } from "@/utils/payloadHash";
+
 import { isItemOversized } from "@/utils/cargoValidation";
 
 export type OptimizationLevel = "auto" | "fast" | "deep";

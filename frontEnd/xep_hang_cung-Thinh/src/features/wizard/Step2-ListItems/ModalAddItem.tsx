@@ -74,7 +74,7 @@ export function AddItemModal({
   const totalItems = useCargoStore(state => 
     state.items.reduce((acc, item) => acc + item.quantity, 0)
   );
-  const { mutate: saveItemToLibrary, isPending: isSaving } = useSaveItem();
+  const { mutate: saveItemToLibrary } = useSaveItem();
   const { data: itemLibrary = [] } = useItemLibrary();
 
   const userRole = useAuthStore((s) => s.userRole);

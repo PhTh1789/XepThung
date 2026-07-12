@@ -56,7 +56,7 @@ export function useOptimizeMutation() {
       useAppStore.getState().setCurrentStep("step3");
     },
 
-    onError: (err: any, _variables, context) => {
+    onError: (err: any, _variables, _context) => {
       if (err?.name === "CanceledError" || err?.message === "canceled") {
         AppToast.optimizeCancelled();
         return;
@@ -74,7 +74,7 @@ export function useOptimizeMutation() {
       console.error("Optimize error:", err);
     },
 
-    onSettled: (_data, _error, _variables, context) => {
+    onSettled: (_data, _error, _variables, _context) => {
       // Tắt loading overlay dù thành công hay thất bại
       useAppStore.getState().hideLoading();
     },

@@ -8,7 +8,7 @@ import {
   formatWeight,
   calculateVolumeM3,
 } from "@/utils/unitConverter";
-import { Truck as TruckIcon, Trash2, Loader2 } from "lucide-react";
+import { Truck as TruckIcon, Trash2 } from "lucide-react";
 import { AlertDialog } from "@/components/ui/AlertDialog";
 
 interface TruckCardProps {
