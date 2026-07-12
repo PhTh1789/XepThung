@@ -20,16 +20,22 @@ class Settings(BaseSettings):
 
     # ── Môi trường ──────────────────────────────────────────────────────────
     APP_ENV: str = "development"
-    APP_NAME: str = "XepHangCungThinh API"
+    APP_NAME: str = "XepThung API"
     APP_VERSION: str = "1.0.0"
 
-    # ── Database (Supabase PostgreSQL) ───────────────────────────────────────
-    DATABASE_URL: str = "postgresql://user:password@host:5432/dbname"
+    # ── Cấu hình bắt buộc (Không có default -> Bắt buộc phải có trong .env) ──
+    # Danh sách các domain được phép gọi API (phân tách bằng dấu phẩy)
+    BACKEND_CORS_ORIGINS: str
+    # Danh sách các Host header được phép (phân tách bằng dấu phẩy)
+    BACKEND_ALLOWED_HOSTS: str = "localhost,127.0.0.1"
 
-    # ── Supabase ─────────────────────────────────────────────────────────────
-    SUPABASE_URL: str = "https://your-project.supabase.co"
-    SUPABASE_ANON_KEY: str = "your-anon-key"
-    SUPABASE_SERVICE_ROLE_KEY: str = "your-service-role-key"
+    # Database (Supabase PostgreSQL)
+    DATABASE_URL: str
+
+    # Supabase
+    SUPABASE_URL: str
+    SUPABASE_ANON_KEY: str
+    SUPABASE_SERVICE_ROLE_KEY: str
 
     # ── Giới hạn nghiệp vụ ───────────────────────────────────────────────────
     GUEST_ITEM_LIMIT: int = 50          # Giới hạn số kiện hàng cho Guest

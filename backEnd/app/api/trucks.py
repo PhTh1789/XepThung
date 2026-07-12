@@ -10,6 +10,7 @@ Endpoints:
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+import logging
 
 from app.core.auth import get_current_user
 from app.core import preset_cache
@@ -18,6 +19,7 @@ from app.schemas.common import StandardSuccess
 from app.schemas.truck import TruckCreate, TruckResponse
 from app.services import truck_service
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/trucks", tags=["Trucks"])
 
 
@@ -32,9 +34,6 @@ def get_truck_presets(db: Session = Depends(get_db)):
     Lay danh sach xe tai mac dinh cua he thong (khong can dang nhap).
     Lan dau tien query DB, cac lan sau tra tu RAM cache.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-
     cached = preset_cache.get("trucks")
     if cached is not None:
         logger.debug("[PresetCache] HIT key='trucks', tra ve %d ban ghi tu cache.", len(cached))

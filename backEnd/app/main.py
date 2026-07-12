@@ -1,5 +1,5 @@
 """
-Điểm khởi đầu của ứng dụng FastAPI – XepHangCungThinh Backend.
+Điểm khởi đầu của ứng dụng FastAPI – XepThung Backend.
 
 Chịu trách nhiệm:
   1. Khởi tạo FastAPI app với metadata.
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Chạy một lần khi server khởi động và shutdown."""
     # ── Startup ──────────────────────────────────────────────────────────
-    logger.info(" --> Khởi động XepHangCungThinh Backend...")
+    logger.info(" --> Khởi động XepThung Backend...")
     settings = get_settings()
     logger.info("   Môi trường: %s", settings.APP_ENV)
 
@@ -72,7 +72,7 @@ async def lifespan(app: FastAPI):
 # Khởi tạo FastAPI App
 # ─────────────────────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="XepHangCungThinh API",
+    title="XepThung API",
     description=(
         "API cho hệ thống tối ưu hóa sắp xếp hàng hóa lên xe tải và trực quan hóa bằng mô hình 3D.\n\n"
         "**Thuật toán:** py3dbp (Heuristic) + PyGAD (Genetic Algorithm)"
@@ -93,19 +93,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # CORS Middleware
 # ─────────────────────────────────────────────────────────────────────────────
 settings = get_settings()
-ALLOWED_ORIGINS = (
-    [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ]
-    if settings.APP_ENV == "development"
-    else [
-        "https://xepthung.tech",
-        "https://www.xepthung.tech",
-        "http://localhost:5173",  # Vite dev server (nếu chạy local mà connect tới prod backend)
-    ]
-)
-
+ALLOWED_ORIGINS = [
+    origin.strip() 
+    for origin in settings.BACKEND_CORS_ORIGINS.split(",") 
+    if origin.strip()
+]
 # 1. CORS Middleware (Bỏ ["*"] khi đi kèm credentials=True)
 app.add_middleware(
     CORSMiddleware,
@@ -116,7 +108,7 @@ app.add_middleware(
 )
 
 # 2. Trusted Host Middleware (Chặn Host Header giả mạo)
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "xepthung.tech", "www.xepthung.tech"]
+ALLOWED_HOSTS = [h.strip() for h in settings.BACKEND_ALLOWED_HOSTS.split(",") if h.strip()]
 app.add_middleware(
     TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS
 )
@@ -183,7 +175,7 @@ def read_root():
     """Kiểm tra sức khỏe hệ thống."""
     return {
         "status": "success",
-        "message": "XepHangCungThinh Backend đang hoạt động!",
+        "message": "XepThung Backend đang hoạt động!",
         "version": "1.0.0",
         "docs": "/docs",
     }
