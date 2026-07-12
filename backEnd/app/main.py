@@ -170,6 +170,7 @@ app.include_router(history.router,   prefix=API_PREFIX)
 # ─────────────────────────────────────────────────────────────────────────────
 # Health Check – Root endpoint
 # ─────────────────────────────────────────────────────────────────────────────
+@app.get("/", tags=["Health"])
 @app.get("/health", tags=["Health"])
 def read_root():
     """Kiểm tra sức khỏe hệ thống."""
