@@ -4,36 +4,19 @@
  * Hệ thống quản lý thông báo (Centralized Toast System).
  * Thay thế việc gọi trực tiếp `toast.error`, `toast.warning` với nội dung hardcode.
  * Đảm bảo Copywriting chuẩn xác, đồng nhất và dễ dàng maintain/i18n.
+ *
+ * QUY TẮC: Mọi toast trong dự án đều phải đi qua file này.
+ * Không được gọi toast.* trực tiếp ở bất kỳ file nào khác (trừ file này).
  */
 import { toast } from "sonner";
 
 export const AppToast = {
-  // === VALIDATION & FORM ERRORS ===
-  validationError: (
-    description: string = "Vui lòng kiểm tra lại các trường báo đỏ.",
-  ) => toast.error("Dữ liệu không hợp lệ", { description }),
-
-  invalidTruck: () =>
-    toast.error("Thông số xe chưa hợp lệ", {
-      description:
-        "Dài tối đa 20m, Rộng/Cao tối đa 5m, Tải trọng tối đa 100 Tấn. Hãy kiểm tra lại các ô viền đỏ.",
-      duration: 6000,
-    }),
-
-  // === WIZARD GUARD ERRORS ===
-  memberOnlyFeature: () =>
+  // ═══════════════════════════════════════════════════════════
+  // WIZARD GUARD ERRORS
+  // ═══════════════════════════════════════════════════════════
+  memberOnlyFeature: (featureName: string = "tính năng này") =>
     toast.warning("Yêu cầu đăng nhập", {
-      description: "Bạn cần đăng nhập để sử dụng chế độ tối ưu sâu",
-    }),
-
-  missingTruck: () =>
-    toast.warning("Chưa chọn xe tải", {
-      description: "Hãy chọn mẫu xe có sẵn hoặc điền kích thước tùy chỉnh.",
-    }),
-
-  missingCargo: () =>
-    toast.warning("Chưa có kiện hàng nào", {
-      description: "Vui lòng thêm ít nhất 1 kiện hàng để tiếp tục.",
+      description: `Bạn cần đăng nhập để sử dụng ${featureName}.`,
     }),
 
   sessionLost: () =>
@@ -41,7 +24,33 @@ export const AppToast = {
       description: "Hệ thống bị mất phiên làm việc hoặc chưa cấu hình xe tải.",
     }),
 
-  // === DATA ACTIONS ===
+  incompleteSession: () =>
+    toast.error("Phiên làm việc không hoàn chỉnh", {
+      description: "Dữ liệu xếp hàng bị mất. Vui lòng cấu hình lại.",
+    }),
+
+  invalidTruckForm: () =>
+    toast.error("Thiếu hoặc sai thông số xe", {
+      description:
+        "Vui lòng điền đầy đủ và kiểm tra lại các ô viền đỏ (Dài ≤ 20m, Rộng/Cao ≤ 5m, Tải trọng ≤ 100 T).",
+    }),
+
+  missingTruckSelection: () =>
+    toast.error("Vui lòng chọn xe tải trước", {
+      description: "Bạn chưa chọn phương tiện vận chuyển nào.",
+    }),
+
+  missingCargoList: () =>
+    toast.error("Danh sách hàng hóa trống", {
+      description: "Vui lòng thêm ít nhất một kiện hàng.",
+    }),
+
+  invalidCargo: (description: string) =>
+    toast.error("Hàng hóa không hợp lệ", { description }),
+
+  // ═══════════════════════════════════════════════════════════
+  // CRUD — ITEM (Kiện Hàng)
+  // ═══════════════════════════════════════════════════════════
   successSave: (itemName: string) =>
     toast.success("Lưu thành công", {
       description: `Đã cập nhật: ${itemName}`,
@@ -54,25 +63,114 @@ export const AppToast = {
 
   successDelete: () => toast.success("Đã xóa kiện hàng"),
 
-  successRegister: () =>
-    toast.success("Đăng ký thành công", {
-      description: "Bạn đã có thể đăng nhập bằng tài khoản vừa tạo.",
+  successDeleteItem: () => toast.success("Đã xóa kiện hàng khỏi thư viện"),
+
+  deleteItemFailed: () =>
+    toast.error("Xóa thất bại", {
+      description: "Lỗi kết nối, không thể xóa kiện hàng lúc này.",
     }),
 
-  // === AUTH ===
+  // ═══════════════════════════════════════════════════════════
+  // CRUD — TRUCK (Xe Tải)
+  // ═══════════════════════════════════════════════════════════
+  successDeleteTruck: () => toast.success("Đã xóa xe tải khỏi thư viện"),
+
+  deleteTruckFailed: () =>
+    toast.error("Xóa thất bại", {
+      description: "Lỗi kết nối, không thể xóa xe tải lúc này.",
+    }),
+
+  saveTruckSuccess: (truckName: string) =>
+    toast.success("Xe tải đã được lưu", {
+      description: `Đã lưu "${truckName}" vào danh sách xe của bạn.`,
+    }),
+
+  saveTruckFailed: () =>
+    toast.error("Lưu xe thất bại", {
+      description: "Không thể lưu xe tải. Vui lòng thử lại.",
+    }),
+
+  // ═══════════════════════════════════════════════════════════
+  // OPTIMIZE
+  // ═══════════════════════════════════════════════════════════
+  optimizeCancelled: () => toast.info("Đã hủy quá trình tính toán."),
+
+  optimizationError: (description: string) =>
+    toast.error("Lỗi tối ưu hóa", { description }),
+
+  // ═══════════════════════════════════════════════════════════
+  // HISTORY
+  // ═══════════════════════════════════════════════════════════
+  noDataToSave: () => toast.error("Không có dữ liệu để lưu"),
+
+  alreadySaved: () => toast.info("Kết quả này đã được lưu rồi."),
+
+  historySaved: (onViewHistory: () => void) =>
+    toast.success("Đã lưu vào lịch sử", {
+      description:
+        "Kết quả sắp xếp đã được lưu. Bạn có thể xem lại bất cứ lúc nào.",
+      action: {
+        label: "Xem lịch sử",
+        onClick: onViewHistory,
+      },
+    }),
+
+  historySaveFailed: (description: string) =>
+    toast.error("Lưu thất bại", { description }),
+
+  loadHistoryFailed: () =>
+    toast.error("Không thể tải lịch sử", {
+      description: "Kiểm tra kết nối và thử lại.",
+    }),
+
+  loadHistoryDetailFailed: () =>
+    toast.error("Không thể tải chi tiết lịch sử", {
+      description: "Vui lòng thử lại.",
+    }),
+
+  successDeleteHistory: () =>
+    toast.success("Xóa thành công", {
+      description: "Lịch sử đã được xóa khỏi hệ thống.",
+    }),
+
+  deleteHistoryFailed: () =>
+    toast.error("Xóa thất bại", {
+      description: "Có lỗi xảy ra khi xóa lịch sử.",
+    }),
+
+  // ═══════════════════════════════════════════════════════════
+  // EXPORT & SHARE
+  // ═══════════════════════════════════════════════════════════
+  exportSuccess: () => toast.success("Đã xuất PDF thành công!"),
+
+  exportFailed: () => toast.error("Không thể xuất PDF. Vui lòng thử lại."),
+
+  comingSoon: (featureName: string = "Tính năng này") =>
+    toast.info(`${featureName} sẽ sớm ra mắt!`, {
+      description: "Bạn sẽ có thể copy link để chia sẻ kết quả xếp hàng.",
+    }),
+
+  // ═══════════════════════════════════════════════════════════
+  // AUTH
+  // ═══════════════════════════════════════════════════════════
   sessionExpired: () =>
     toast.error("Phiên đăng nhập hết hạn", {
       description: "Vui lòng đăng nhập lại để tiếp tục lưu trữ.",
     }),
+
   logoutSuccess: () =>
     toast.success("Đăng xuất thành công", {
       description: "Đã dọn dẹp dữ liệu phiên làm việc an toàn.",
     }),
 
-  // === API & SYSTEM ERRORS ===
+  successRegister: () =>
+    toast.success("Đăng ký thành công", {
+      description: "Bạn đã có thể đăng nhập bằng tài khoản vừa tạo.",
+    }),
+
+  // ═══════════════════════════════════════════════════════════
+  // API & SYSTEM ERRORS
+  // ═══════════════════════════════════════════════════════════
   apiError: (description: string = "Đã có lỗi xảy ra khi kết nối máy chủ.") =>
     toast.error("Lỗi hệ thống", { description }),
-
-  optimizationError: (description: string) =>
-    toast.error("Lỗi tối ưu hóa", { description }),
 };

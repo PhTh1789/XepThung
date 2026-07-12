@@ -7,27 +7,28 @@
  * Trách nhiệm:
  *   - Truck state & actions (selectPresetTruck, activateCustomTruckMode...)
  *   - Item state & actions (addItem, removeItem, updateItem...)
- *   - Library fetching (fetchTruckLibrary, fetchItemLibrary)
  *   - Optimization (optimizeCargo, validateCargoRules)
  *   - Settings (setSettings, setOptimizationLevel)
+ *
+ * Server State (API calls) đã được tách ra:
+ *   - GET libraries → src/hooks/queries/useTruckLibrary.ts, useItemLibrary.ts
+ *   - CRUD mutations → src/hooks/mutations/useTruckMutations.ts, useItemMutations.ts
  *
  * KHÔNG chứa: Auth identity, Navigation/Step, Modal Stack, History persistence.
  *
  * Cross-store (outbound only):
- *   - optimizeCargo → gọi useAppStore.getState().showLoading()
- *   - optimizeCargo → gọi useAppStore.getState().setCurrentStep("step3")
- *   - fetchTruckLibrary → đọc useAuthStore.getState().userRole
+ *   - optimizeCargo → đã tách sang src/hooks/mutations/useOptimizeMutation.ts
+ *   - validateCargoRules, canContinueStep1, canContinueStep2 → dùng bởi useAppStore.goToStep()
  */
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 import type { Truck, Item, Settings } from "@/schemas";
 import type { OptimizationData, HistoryDetailData } from "@/services/api.types";
+import { queryClient } from "@/lib/react-query";
 import { runOptimization } from "@/services/optimizer.service";
-import { getTruckPresets, getSavedTrucks } from "@/services/trucks.service";
-import { getItemPresets, getSavedItems } from "@/services/items.service";
 import { ApiError } from "@/services/api.types";
-import { toast } from "sonner";
+import { AppToast } from "@/utils/appToast";
 import {
   calculateVolumeM3,
   formatWeight,
@@ -47,7 +48,6 @@ interface CargoStore {
   /** true khi user muốn lưu xe custom vào preset library. */
   savePreset: boolean;
   truck: Truck | null;
-  truckLibrary: Truck[];
   /**
    * Signal counter để yêu cầu TruckForm tự kích hoạt validate.
    * Pattern: Signal Counter — React-idiomatic, không cần DOM events.
@@ -56,7 +56,6 @@ interface CargoStore {
 
   // --- Item State ---
   items: Item[];
-  itemLibrary: Item[];
 
   // --- Optimization State ---
   /** Cấp độ tối ưu hóa: 'auto' (mặc định) | 'fast' | 'deep' */
@@ -81,28 +80,19 @@ interface CargoStore {
   toggleSavePreset: (save: boolean) => void;
   resetSavePreset: () => void;
   resetTruck: () => void;
-  fetchTruckLibrary: () => Promise<void>;
-  removeSavedTruck: (truckId: string) => Promise<void>;
 
   // --- Item Actions ---
   addItem: (item: Item) => void;
   removeItem: (itemId: string) => void;
   updateItem: (itemId: string, updates: Partial<Item>) => void;
   clearItems: () => void;
-  fetchItemLibrary: () => Promise<void>;
-  addSavedItemToLibrary: (itemPayload: any) => Promise<void>;
-  removeSavedItem: (itemId: string) => Promise<void>;
 
   // --- Settings Actions ---
   setSettings: (settings: Partial<Settings>) => void;
   setOptimizationLevel: (level: OptimizationLevel) => void;
 
   // --- Optimization Actions ---
-  /**
-   * Async action: Chạy thuật toán tối ưu hóa.
-   * Side effect: gọi useAppStore.getState().showLoading() / setCurrentStep().
-   */
-  optimizeCargo: () => Promise<void>;
+  // (Tách sang useOptimizeMutation.ts)
   requestTruckFormValidation: () => void;
 
   // --- Computed Selectors ---
@@ -134,10 +124,8 @@ export const useCargoStore = create<CargoStore>()(
       truckMode: null,
       savePreset: false,
       truck: null,
-      truckLibrary: [],
       truckFormValidationSignal: 0,
       items: [],
-      itemLibrary: [],
       optimizationLevel: "auto",
       optimizationResult: null,
       resultPayloadHash: null,
@@ -190,57 +178,6 @@ export const useCargoStore = create<CargoStore>()(
 
       resetTruck: () =>
         set({ truckMode: null, truck: null, savePreset: false }),
-
-      fetchTruckLibrary: async () => {
-        try {
-          const presets = await getTruckPresets();
-          const mappedPresets = presets.map((p) => ({ ...p, is_preset: true }));
-          let saved: Truck[] = [];
-          // Cross-store static read: check user role
-          const { useAuthStore } = await import("./useAuthStore");
-          if (useAuthStore.getState().userRole === "member") {
-            const rawSaved = await getSavedTrucks();
-            saved = rawSaved.map((s) => ({ ...s, is_preset: false }));
-          }
-          set({ truckLibrary: [...saved, ...mappedPresets] });
-        } catch (err) {
-          console.error("Failed to fetch truck library", err);
-        }
-      },
-
-      removeSavedTruck: async (truckId: string) => {
-        const currentState = get();
-        // 1. Lưu lại state cũ để Rollback nếu lỗi
-        const previousLibrary = currentState.truckLibrary;
-        const isSelectedTruck = currentState.truck?.id === truckId;
-
-        // 2. Optimistic UI: Xóa khỏi UI ngay lập tức
-        set({
-          truckLibrary: previousLibrary.filter((t) => t.id !== truckId),
-          // Nếu truck bị xóa đang được chọn trên form, reset form
-          ...(isSelectedTruck && currentState.truckMode === "preset"
-            ? { truck: null, truckMode: null }
-            : {}),
-        });
-
-        try {
-          const { deleteTruck } = await import("@/services/trucks.service");
-          await deleteTruck(truckId);
-          toast.success("Đã xóa xe tải khỏi thư viện");
-        } catch (err) {
-          console.error("Lỗi khi xóa xe tải:", err);
-          // 3. Rollback
-          set({ truckLibrary: previousLibrary });
-          // Re-select if it was selected
-          if (isSelectedTruck && currentState.truckMode === "preset") {
-            set({
-              truck: previousLibrary.find((t) => t.id === truckId) || null,
-              truckMode: "preset",
-            });
-          }
-          toast.error("Lỗi mạng, không thể xóa xe tải lúc này");
-        }
-      },
 
       // --- Item Actions ---
       addItem: (item) =>
@@ -318,69 +255,6 @@ export const useCargoStore = create<CargoStore>()(
 
       clearItems: () => set({ items: [] }),
 
-      fetchItemLibrary: async () => {
-        try {
-          const presets = await getItemPresets();
-          const mappedPresets = presets.map((p) => ({ ...p, is_preset: true }));
-          let saved: Item[] = [];
-          const { useAuthStore } = await import("./useAuthStore");
-          if (useAuthStore.getState().userRole === "member") {
-            const rawSaved = await getSavedItems();
-            saved = rawSaved.map((s) => ({ ...s, is_preset: false }));
-          }
-          set({ itemLibrary: [...saved, ...mappedPresets] });
-        } catch (err) {
-          console.error("Failed to fetch item library", err);
-        }
-      },
-
-      addSavedItemToLibrary: async (itemPayload) => {
-        const currentState = get();
-        try {
-          const { saveItem } = await import("@/services/items.service");
-          // Gọi API bằng Pessimistic Update (đợi API trả về ID thực sự)
-          const savedItem = await saveItem(itemPayload);
-
-          // Chèn trực tiếp kiện hàng mới (với ID DB) vào mảng itemLibrary (Inline Cache Update)
-          set({
-            itemLibrary: [
-              { ...savedItem, is_preset: false },
-              ...currentState.itemLibrary,
-            ],
-          });
-
-          const { AppToast } = await import("@/utils/appToast");
-          AppToast.successSave(savedItem.name ?? "");
-        } catch (err) {
-          console.error("Lỗi khi lưu kiện hàng vào thư viện:", err);
-          const { AppToast } = await import("@/utils/appToast");
-          AppToast.apiError();
-          throw err; // Bắn lỗi ra để component có thể biết nếu cần
-        }
-      },
-
-      removeSavedItem: async (itemId: string) => {
-        const currentState = get();
-        // 1. Lưu lại state cũ để Rollback nếu lỗi
-        const previousLibrary = currentState.itemLibrary;
-
-        // 2. Optimistic UI: Xóa khỏi UI ngay lập tức
-        set({
-          itemLibrary: previousLibrary.filter((i) => i.id !== itemId),
-        });
-
-        try {
-          const { deleteItem } = await import("@/services/items.service");
-          await deleteItem(itemId);
-          toast.success("Đã xóa kiện hàng khỏi thư viện");
-        } catch (err) {
-          console.error("Lỗi khi xóa kiện hàng:", err);
-          // 3. Rollback
-          set({ itemLibrary: previousLibrary });
-          toast.error("Lỗi mạng, không thể xóa kiện hàng lúc này");
-        }
-      },
-
       // --- Settings Actions ---
       setSettings: (settings) =>
         set((state) => ({ settings: { ...state.settings, ...settings } })),
@@ -399,86 +273,13 @@ export const useCargoStore = create<CargoStore>()(
           if (userRole === "member") {
             set({ optimizationLevel: level });
           } else {
-            // Dùng trực tiếp toast của sonner
-            toast.warning("Yêu cầu đăng nhập", {
-              description:
-                "Chế độ tối ưu Sâu chỉ dành cho Thành viên. Vui lòng đăng nhập để sử dụng.",
-            });
+            AppToast.memberOnlyFeature("chế độ Tối ưu Sâu");
           }
         });
       },
 
       // --- Optimization Action ---
-      optimizeCargo: async () => {
-        const state = get();
-
-        // Bước 1: Validate cargo rules
-        const validation = state.validateCargoRules();
-        if (!validation.isValid) {
-          set({ optimizationError: validation.errors.join(" | ") });
-          validation.errors.forEach((err) =>
-            toast.error("Vi phạm quy tắc xếp hàng", {
-              description: err,
-              duration: 6000,
-            }),
-          );
-          return;
-        }
-
-        const { truck, items, optimizationLevel, settings } = state;
-        if (!truck) {
-          set({ optimizationError: "Chưa chọn xe tải." });
-          return;
-        }
-
-        // Bước 2: Gọi Global Loading từ useAppStore
-        const { useAppStore } = await import("./useAppStore");
-        set({ optimizationError: null });
-        const controller = useAppStore
-          .getState()
-          .showLoading(
-            "Hệ thống đang tính toán phương án xếp hàng tối ưu...",
-            true,
-          );
-
-        try {
-          // Bước 3: Gọi API
-          const result = await runOptimization(
-            {
-              optimization_level: optimizationLevel,
-              truck,
-              items,
-              load_margin: settings.load_margin,
-            },
-            { signal: controller.signal },
-          );
-
-          // Bước 4: Thành công — lưu kết quả, hash cache, navigate step3
-          const savedHash = buildPayloadHash(truck, items);
-          set({
-            optimizationResult: result,
-            resultPayloadHash: savedHash,
-          });
-          useAppStore.getState().setCurrentStep("step3");
-        } catch (err: any) {
-          if (err?.name === "CanceledError" || err?.message === "canceled") {
-            toast.info("Đã hủy quá trình tính toán.");
-            return;
-          }
-          const errorMsg =
-            err instanceof ApiError
-              ? err.message
-              : err instanceof Error
-                ? err.message
-                : "Đã xảy ra lỗi không xác định. Vui lòng thử lại.";
-
-          set({ optimizationError: errorMsg });
-          toast.error("Lỗi tối ưu hóa", { description: errorMsg });
-          console.error("Optimize error:", err);
-        } finally {
-          useAppStore.getState().hideLoading();
-        }
-      },
+      // Hàm optimizeCargo đã được tách hoàn toàn sang useOptimizeMutation.ts
 
       requestTruckFormValidation: () =>
         set((state) => ({

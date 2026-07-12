@@ -20,7 +20,7 @@ import { create } from "zustand";
 import type { HistoryDetailData } from "@/services/api.types";
 import { saveHistory } from "@/services/history.service";
 import { ApiError } from "@/services/api.types";
-import { toast } from "sonner";
+import { AppToast } from "@/utils/appToast";
 
 interface HistoryStore {
   /**
@@ -73,20 +73,18 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
 
     // Guard: chỉ member mới được lưu
     if (userRole !== "member") {
-      toast.warning("Cần đăng nhập", {
-        description: "Vui lòng đăng nhập để lưu kết quả vào lịch sử.",
-      });
+      AppToast.memberOnlyFeature("tính năng lưu lịch sử");
       return false;
     }
 
     if (!optimizationResult || !truck) {
-      toast.error("Không có dữ liệu để lưu");
+      AppToast.noDataToSave();
       return false;
     }
 
     // Tránh lưu trùng phiên
     if (get().lastSavedHash && get().lastSavedHash === resultPayloadHash) {
-      toast.info("Kết quả này đã được lưu rồi.");
+      AppToast.alreadySaved();
       return true;
     }
 
@@ -114,20 +112,14 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
 
       set({ lastSavedHash: resultPayloadHash });
 
-      toast.success("Đã lưu vào lịch sử", {
-        description: "Kết quả sắp xếp đã được lưu. Bạn có thể xem lại bất cứ lúc nào.",
-        action: {
-          label: "Xem lịch sử",
-          onClick: () => useAppStore.getState().setCurrentStep("history"),
-        },
-      });
+      AppToast.historySaved(() => useAppStore.getState().setCurrentStep("history"));
       return true;
     } catch (err: any) {
       if (err?.name === "CanceledError" || err?.message === "canceled") return false;
       const errorMsg =
         err instanceof ApiError ? err.message : "Không thể lưu. Vui lòng thử lại.";
       set({ saveHistoryError: errorMsg });
-      toast.error("Lưu thất bại", { description: errorMsg });
+      AppToast.historySaveFailed(errorMsg);
       return false;
     } finally {
       useAppStore.getState().hideLoading();

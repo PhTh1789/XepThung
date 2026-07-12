@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCargoStore } from "@/store/useCargoStore";
-import { toast } from "sonner";
+import { AppToast } from "@/utils/appToast";
 import { Stepper } from "@/components/ui/Stepper";
 import { Step1SelectTruck } from "@/features/wizard/Step1-SelectTruck/Step1-SelectTruck";
 import { Step2ListItems } from "@/features/wizard/Step2-ListItems/Step2-ListItems";
@@ -16,9 +16,7 @@ export function WizardLayout() {
   // [Case C - Route Guard]: Ngan user truy cap truc tiep vao Step 2, Step 3 ma chua co Truck
   useEffect(() => {
     if ((currentStep === "step2" || currentStep === "step3") && !canContinueStep1()) {
-      toast.error("Vui lòng chọn xe tải trước", {
-        description: "Hệ thống bị mất phiên làm việc hoặc chưa cấu hình xe tải.",
-      });
+      AppToast.sessionLost();
       setCurrentStep("step1");
     }
   }, [currentStep, canContinueStep1, setCurrentStep]);

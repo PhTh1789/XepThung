@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 import { useCargoStore } from "@/store/useCargoStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useTruckLibrary } from "@/hooks/queries/useTruckLibrary";
+import { InlineAlert } from "@/components/ui/InlineAlert";
+import { Button } from "@/components/ui/Button";
 import { TruckForm } from "./TruckForm";
 import { TruckCard } from "./TruckCard";
 import { Truck as TruckIcon, Loader2 } from "lucide-react";
@@ -8,18 +11,13 @@ import { Truck as TruckIcon, Loader2 } from "lucide-react";
 export function Step1SelectTruck() {
   const truck = useCargoStore((state) => state.truck);
   const truckMode = useCargoStore((state) => state.truckMode);
-  const truckLibrary = useCargoStore((state) => state.truckLibrary);
   const selectPresetTruck = useCargoStore((state) => state.selectPresetTruck);
   const activateCustomTruckMode = useCargoStore(
     (state) => state.activateCustomTruckMode,
   );
-  const fetchTruckLibrary = useCargoStore((state) => state.fetchTruckLibrary);
 
   const userRole = useAuthStore((s) => s.userRole);
-
-  useEffect(() => {
-    fetchTruckLibrary();
-  }, [userRole]); // Refetch neu userRole thay doi (VD: vua dang nhap)
+  const { data: truckLibrary = [], isLoading, isError, refetch } = useTruckLibrary();
 
   return (
     <div className="flex flex-col w-full max-w-[1280px] mx-auto">

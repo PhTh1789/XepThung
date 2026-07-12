@@ -19,7 +19,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { buildPayloadHash } from "@/utils/payloadHash";
 import { saveTruck } from "@/services/trucks.service";
-import { toast } from "sonner";
+import { AppToast } from "@/utils/appToast";
 
 export type StepType = "home" | "step1" | "step2" | "step3" | "history";
 export type ModalType = "roles" | "auth" | "settings" | "add_item";
@@ -40,6 +40,11 @@ interface AppStore {
   modalStack: ModalType[];
   // Global Loading (merged from useLoadingStore)
   globalLoading: GlobalLoadingState;
+  /**
+   * Signal counter để trigger useOptimizeMutation từ Step3-Result component.
+   * Pattern: Signal Counter (React-idiomatic). Tăng giá trị = yêu cầu tối ưu mới.
+   */
+  optimizeSignal: number;
 
   // Navigation Actions
   setCurrentStep: (step: StepType) => void;
@@ -71,6 +76,7 @@ export const useAppStore = create<AppStore>()(
       // Initial State
   currentStep: "home",
   modalStack: [],
+  optimizeSignal: 0,
   globalLoading: {
     isActive: false,
     message: "",
@@ -120,9 +126,9 @@ export const useAppStore = create<AppStore>()(
         if (!cargoState.canContinueStep1()) {
           if (cargoState.truckMode === "custom") {
             cargoState.requestTruckFormValidation();
-            toast.error("Thiếu thông tin xe tải", { description: "Vui lòng điền đầy đủ kích thước xe." });
+            AppToast.invalidTruckForm();
           } else {
-            toast.error("Vui lòng chọn xe tải trước", { description: "Bạn chưa chọn phương tiện vận chuyển nào." });
+            AppToast.missingTruckSelection();
           }
           return;
         }
@@ -131,13 +137,13 @@ export const useAppStore = create<AppStore>()(
       // 2. Additional Guards for Step 3
       if (destination === "step3") {
         if (!cargoState.canContinueStep2()) {
-          toast.error("Danh sách hàng hóa trống", { description: "Vui lòng thêm ít nhất một kiện hàng." });
+          AppToast.missingCargoList();
           return;
         }
 
         const validation = cargoState.validateCargoRules();
         if (!validation.isValid) {
-          toast.error("Hàng hóa không hợp lệ", { description: validation.errors[0] });
+          AppToast.invalidCargo(validation.errors[0]);
           return;
         }
       }
@@ -161,17 +167,13 @@ export const useAppStore = create<AppStore>()(
               max_weight: truckToSave.max_weight,
             })
               .then(() => {
-                toast.success("Xe tải đã được lưu", {
-                  description: `Đã lưu "${truckToSave.name}" vào danh sách xe của bạn.`,
-                });
+                AppToast.saveTruckSuccess(truckToSave.name);
                 useCargoStore.getState().resetSavePreset();
-                useCargoStore.getState().fetchTruckLibrary();
+                import("@/lib/react-query").then(({ queryClient }) => {
+                  queryClient.invalidateQueries({ queryKey: ["truckLibrary"] });
+                });
               })
-              .catch(() =>
-                toast.error("Lưu xe thất bại", {
-                  description: "Không thể lưu xe tải. Vui lòng thử lại.",
-                })
-              );
+              .catch(() => AppToast.saveTruckFailed());
           }
         });
       }
@@ -180,10 +182,12 @@ export const useAppStore = create<AppStore>()(
       if (destination === "step3") {
         const currentHash = buildPayloadHash(cargoState.truck, cargoState.items);
         if (cargoState.optimizationResult && currentHash === cargoState.resultPayloadHash) {
+          // Cache hit: Data chưa thay đổi, chuyển màn hình ngay
           set({ currentStep: "step3" });
           return;
         }
-        cargoState.optimizeCargo();
+        // Cache miss: Emit signal để useOptimizeMutation trong Step3-Result tự trigger
+        set({ currentStep: "step3", optimizeSignal: get().optimizeSignal + 1 });
         return;
       }
 

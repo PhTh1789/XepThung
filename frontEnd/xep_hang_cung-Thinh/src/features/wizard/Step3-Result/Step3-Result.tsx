@@ -21,6 +21,8 @@ import { AlertCircle, History, RotateCcw } from "lucide-react";
 import { useCargoStore } from "@/store/useCargoStore";
 import { useAppStore } from "@/store/useAppStore";
 import { useHistoryStore } from "@/store/useHistoryStore";
+import { useOptimizeMutation } from "@/hooks/mutations/useOptimizeMutation";
+import { AppToast } from "@/utils/appToast";
 import { ResultLeftPanel } from "./ResultLeftPanel";
 import { ResultRightPanel } from "./ResultRightPanel";
 import { MOCK_OPTIMIZATION_RESULT } from "./mock/mockOptimizationResult";
@@ -40,33 +42,59 @@ export function Step3Result() {
   const optimizationResult = useCargoStore(state => state.optimizationResult);
   const optimizationError  = useCargoStore(state => state.optimizationError);
   const resetSession       = useCargoStore(state => state.resetSession);
-
-  const setCurrentStep     = useAppStore(state => state.setCurrentStep);
-  const goToStep           = useAppStore(state => state.goToStep);
-
-  const isHistoryMode      = useHistoryStore(state => state.isHistoryMode);
-  const resetHistoryState  = useHistoryStore(state => state.resetHistoryState);
-  
-  const optimizeCargo      = useCargoStore(state => state.optimizeCargo);
+  const truck              = useCargoStore(state => state.truck);
+  const items              = useCargoStore(state => state.items);
+  const settings           = useCargoStore(state => state.settings);
+  const optimizationLevel  = useCargoStore(state => state.optimizationLevel);
   const canContinueStep1   = useCargoStore(state => state.canContinueStep1);
   const canContinueStep2   = useCargoStore(state => state.canContinueStep2);
 
-  const hasAttemptedRecovery = useRef(false);
+  const setCurrentStep     = useAppStore(state => state.setCurrentStep);
+  const goToStep           = useAppStore(state => state.goToStep);
+  const optimizeSignal     = useAppStore(state => state.optimizeSignal);
 
+  const isHistoryMode      = useHistoryStore(state => state.isHistoryMode);
+  const resetHistoryState  = useHistoryStore(state => state.resetHistoryState);
+
+  const { mutate: optimize } = useOptimizeMutation();
+
+  const hasAttemptedRecovery = useRef(false);
+  const lastSignalRef = useRef(0);
+
+  // Lắng nghe optimizeSignal từ AppStore (emit bởi goToStep khi cache miss)
+  useEffect(() => {
+    if (optimizeSignal > 0 && optimizeSignal !== lastSignalRef.current) {
+      lastSignalRef.current = optimizeSignal;
+      if (!truck) return;
+      optimize({
+        payload: {
+          optimization_level: optimizationLevel,
+          truck,
+          items,
+          load_margin: settings.load_margin,
+        },
+      });
+    }
+  }, [optimizeSignal, truck, items, optimizationLevel, settings, optimize]);
+
+  // Smart Recovery: Nếu vào Step 3 trực tiếp (F5 hoặc từ History restore)
   useEffect(() => {
     // Smart Recovery (Background Re-fetch)
     if (!optimizationResult && !isHistoryMode && !hasAttemptedRecovery.current) {
       hasAttemptedRecovery.current = true;
-      if (canContinueStep1() && canContinueStep2()) {
+      if (canContinueStep1() && canContinueStep2() && truck) {
         // Input hợp lệ, tự động gọi API tính toán lại
-        optimizeCargo();
+        optimize({
+          payload: {
+            optimization_level: optimizationLevel,
+            truck,
+            items,
+            load_margin: settings.load_margin,
+          },
+        });
       } else {
         // Graceful Downgrade: Mất input, lùi về step 2
-        import("sonner").then(({ toast }) => {
-          toast.error("Phiên làm việc không hoàn chỉnh", {
-            description: "Dữ liệu xếp hàng bị mất. Vui lòng cấu hình lại.",
-          });
-        });
+        AppToast.incompleteSession();
         goToStep("step2");
       }
     }
@@ -75,7 +103,11 @@ export function Step3Result() {
     isHistoryMode,
     canContinueStep1,
     canContinueStep2,
-    optimizeCargo,
+    truck,
+    items,
+    optimizationLevel,
+    settings,
+    optimize,
     goToStep,
   ]);
 

@@ -17,7 +17,7 @@ import { HistoryTable } from "./HistoryTable";
 import { HistoryDetailModal } from "./HistoryDetailModal";
 import type { HistoryRecord, PaginationMeta } from "@/services/api.types";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { AppToast } from "@/utils/appToast";
 
 const PAGE_SIZE = 10;
 
@@ -39,9 +39,7 @@ export function HistoryPage() {
       setRecords(data.records);
       setMeta(data.meta);
     } catch {
-      toast.error("Không thể tải lịch sử", {
-        description: "Kiểm tra kết nối và thử lại.",
-      });
+      AppToast.loadHistoryFailed();
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +49,7 @@ export function HistoryPage() {
     setDeletingId(historyId);
     try {
       await deleteHistory(historyId);
-      toast.success("Xóa thành công", { description: "Lịch sử đã được xóa khỏi hệ thống." });
+      AppToast.successDeleteHistory();
       
       // Nếu xóa thành công mà trang hiện tại hết data và không phải trang 1, lùi 1 trang.
       // Nếu không, refetch trang hiện tại.
@@ -61,7 +59,7 @@ export function HistoryPage() {
         await fetchHistory(currentPage);
       }
     } catch {
-      toast.error("Xóa thất bại", { description: "Có lỗi xảy ra khi xóa lịch sử." });
+      AppToast.deleteHistoryFailed();
     } finally {
       setDeletingId(null);
     }

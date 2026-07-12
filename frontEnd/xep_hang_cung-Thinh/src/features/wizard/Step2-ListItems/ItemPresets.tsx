@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCargoStore } from "@/store/useCargoStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useDeleteItem } from "@/hooks/mutations/useItemMutations";
 import { formatLength, formatWeight } from "@/utils/unitConverter";
 import { LIMITS } from "@/lib/constants";
 import { Loader2, Trash2 } from "lucide-react";
 import { AlertDialog } from "@/components/ui/AlertDialog";
+import { useItemLibrary } from "@/hooks/queries/useItemLibrary";
+import { InlineAlert } from "@/components/ui/InlineAlert";
+import { Button } from "@/components/ui/Button";
 
 const { guestMaxItems } = LIMITS;
 
@@ -16,29 +20,37 @@ export function ItemPresets({ onSelect }: ItemPresetsProps) {
   const [deletingItem, setDeletingItem] = useState<any>(null);
   
   const settings = useCargoStore(state => state.settings);
-  const itemLibrary = useCargoStore(state => state.itemLibrary);
-  const fetchItemLibrary = useCargoStore(state => state.fetchItemLibrary);
-  const removeSavedItem = useCargoStore(state => state.removeSavedItem);
   const totalItems = useCargoStore(state => 
     state.items.reduce((acc, item) => acc + item.quantity, 0)
   );
+  const { mutate: deleteItem, isPending: isDeleting } = useDeleteItem();
 
   const userRole = useAuthStore((s) => s.userRole);
   const isGuestLimitReached = userRole === "guest" && totalItems >= guestMaxItems;
-
-  useEffect(() => {
-    fetchItemLibrary();
-  }, [userRole]);
+  const { data: itemLibrary = [], isLoading, isError, refetch } = useItemLibrary();
 
   return (
     <>
       <div className="flex flex-col w-full mb-3">
       <h3 className="text-sm font-bold text-foreground mb-2">Gợi ý Hàng Hóa</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[220px] overflow-y-auto pr-2 -mr-2 pb-1">
-        {itemLibrary.length === 0 ? (
+        {isLoading ? (
           <div className="flex items-center justify-center col-span-full h-[100px] text-muted-foreground">
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
             <span>Đang tải gợi ý hàng hóa...</span>
+          </div>
+        ) : isError ? (
+          <div className="col-span-full flex flex-col items-center justify-center h-[100px] gap-2">
+            <InlineAlert variant="destructive" title="Lỗi tải dữ liệu">
+              Không thể lấy danh sách hàng mẫu.
+            </InlineAlert>
+            <Button size="sm" onClick={() => refetch()} variant="outline" className="h-8">
+              Thử lại
+            </Button>
+          </div>
+        ) : itemLibrary.length === 0 ? (
+          <div className="flex items-center justify-center col-span-full h-[100px] text-muted-foreground">
+            <span>Không có hàng hóa gợi ý nào.</span>
           </div>
         ) : (
           itemLibrary.map((preset) => (
@@ -91,11 +103,13 @@ export function ItemPresets({ onSelect }: ItemPresetsProps) {
           description={`Bạn có chắc chắn muốn xóa kiện hàng "${deletingItem.name}" ra khỏi thư viện? Hành động này không thể hoàn tác.`}
           onConfirm={() => {
             if (deletingItem.id) {
-              removeSavedItem(deletingItem.id);
+              deleteItem(deletingItem.id, {
+                onSettled: () => setDeletingItem(null),
+              });
             }
           }}
           variant="danger"
-          confirmLabel="Xóa"
+          confirmLabel={isDeleting ? "Đang xóa..." : "Xóa"}
         />
       )}
     </>

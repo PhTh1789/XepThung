@@ -83,7 +83,7 @@ export function HeaderActions({ onAddClick }: HeaderActionsProps) {
               <button
                 key={value}
                 onClick={() => handleLevelClick(value)}
-                // disabled={isDisabled}
+                aria-disabled={isDisabled}
                 title={
                   isDisabled
                     ? "Chế độ Sâu chỉ dành cho Thành viên đã đăng nhập"

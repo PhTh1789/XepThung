@@ -5,6 +5,7 @@ import { useCargoStore } from "@/store/useCargoStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { AppToast } from "@/utils/appToast";
 import { Input } from "@/components/ui/Input";
 import { FieldError } from "@/components/ui/FieldError";
 import { toBaseLength, toDisplayLength, toBaseWeight, toDisplayWeight } from "@/utils/unitConverter";
@@ -239,8 +240,15 @@ export function TruckForm({ isSelected, onActivate }: TruckFormProps) {
             type="button"
             role="switch"
             aria-checked={savePreset}
-            disabled={userRole !== "member"}
-            onClick={() => toggleSavePreset(!savePreset)}
+            aria-disabled={userRole !== "member"}
+            onClick={(e) => {
+              e.preventDefault();
+              if (userRole !== "member") {
+                AppToast.memberOnlyFeature("chức năng lưu thùng xe");
+                return;
+              }
+              toggleSavePreset(!savePreset);
+            }}
             className={cn(
               "relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               userRole !== "member" ? "cursor-not-allowed" : "cursor-pointer",
@@ -256,7 +264,11 @@ export function TruckForm({ isSelected, onActivate }: TruckFormProps) {
           </button>
           <span
             onClick={() => {
-              if (userRole === "member") toggleSavePreset(!savePreset);
+              if (userRole === "member") {
+                toggleSavePreset(!savePreset);
+              } else {
+                AppToast.memberOnlyFeature("chức năng lưu thùng xe");
+              }
             }}
             className={cn(
               "text-[14px] font-medium text-foreground select-none",

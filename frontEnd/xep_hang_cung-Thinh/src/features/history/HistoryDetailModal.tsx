@@ -17,7 +17,7 @@ import { Loader2, Box, BarChart2, Package, PackageX, Truck, Calendar } from "luc
 import { useHistoryStore } from "@/store/useHistoryStore";
 import { getHistoryDetail } from "@/services/history.service";
 import type { HistoryDetailData } from "@/services/api.types";
-import { toast } from "sonner";
+import { AppToast } from "@/utils/appToast";
 
 interface HistoryDetailModalProps {
   historyId: string | null;
@@ -57,9 +57,7 @@ export function HistoryDetailModal({ historyId, onClose }: HistoryDetailModalPro
     getHistoryDetail(historyId)
       .then(setDetail)
       .catch(() => {
-        toast.error("Không thể tải chi tiết lịch sử", {
-          description: "Vui lòng thử lại.",
-        });
+        AppToast.loadHistoryDetailFailed();
         onClose();
       })
       .finally(() => setIsLoading(false));

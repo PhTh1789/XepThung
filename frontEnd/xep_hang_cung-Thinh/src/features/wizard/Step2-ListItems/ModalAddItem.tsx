@@ -27,6 +27,8 @@ import {
 import { ItemSchema, type ItemInput, type Item } from "@/schemas";
 import { useCargoStore } from "@/store/useCargoStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useSaveItem } from "@/hooks/mutations/useItemMutations";
+import { useItemLibrary } from "@/hooks/queries/useItemLibrary";
 import { toBaseWeight, toDisplayWeight } from "@/utils/unitConverter";
 import { isItemOversized, isItemOverweight } from "@/utils/cargoValidation";
 import { LIMITS } from "@/lib/constants";
@@ -69,11 +71,11 @@ export function AddItemModal({
   
   const settings = useCargoStore(state => state.settings);
   const truck = useCargoStore(state => state.truck);
-  const addSavedItemToLibrary = useCargoStore(state => state.addSavedItemToLibrary);
-  const itemLibrary = useCargoStore(state => state.itemLibrary);
   const totalItems = useCargoStore(state => 
     state.items.reduce((acc, item) => acc + item.quantity, 0)
   );
+  const { mutate: saveItemToLibrary, isPending: isSaving } = useSaveItem();
+  const { data: itemLibrary = [] } = useItemLibrary();
 
   const userRole = useAuthStore((s) => s.userRole);
 
@@ -207,20 +209,23 @@ export function AddItemModal({
     } as Item;
 
     // Centralized Store Action: Luu vao thu vien neu user bat toggle (chi Add mode)
-    // React Hook Form se tu dong set isSubmitting = true trong thoi gian await nay
     if (!isEditMode && saveToLibrary) {
       try {
-        await addSavedItemToLibrary({
-          name: payload.name ?? "",
-          length: payload.length,
-          width: payload.width,
-          height: payload.height,
-          weight: payload.weight,
-          color: payload.color,
+        await new Promise<void>((resolve, reject) => {
+          saveItemToLibrary(
+            {
+              name: payload.name ?? "",
+              length: payload.length,
+              width: payload.width,
+              height: payload.height,
+              weight: payload.weight,
+              color: payload.color,
+            },
+            { onSuccess: () => resolve(), onError: (err) => reject(err) }
+          );
         });
-      } catch (err) {
-        // Error already handled and toasted by the store
-        // Return early to prevent closing modal and adding to current list if save failed
+      } catch {
+        // Error already handled and toasted by the mutation hook
         return;
       }
     }

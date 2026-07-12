@@ -2,12 +2,13 @@ import type { Truck } from "@/schemas";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useCargoStore } from "@/store/useCargoStore";
+import { useDeleteTruck } from "@/hooks/mutations/useTruckMutations";
 import {
   formatLength,
   formatWeight,
   calculateVolumeM3,
 } from "@/utils/unitConverter";
-import { Truck as TruckIcon, Trash2 } from "lucide-react";
+import { Truck as TruckIcon, Trash2, Loader2 } from "lucide-react";
 import { AlertDialog } from "@/components/ui/AlertDialog";
 
 interface TruckCardProps {
@@ -19,7 +20,8 @@ interface TruckCardProps {
 export function TruckCard({ truck, isSelected, onSelect }: TruckCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { settings, removeSavedTruck } = useCargoStore();
+  const settings = useCargoStore((s) => s.settings);
+  const { mutate: deleteTruck, isPending: isDeleting } = useDeleteTruck();
 
   useEffect(() => {
     // Vì đang dùng Cách 2 (placeholder DOM tĩnh), ta tắt skeleton ngay.
@@ -149,11 +151,13 @@ export function TruckCard({ truck, isSelected, onSelect }: TruckCardProps) {
         description={`Bạn có chắc chắn muốn xóa "${truck.name}" ra khỏi thư viện? Hành động này không thể hoàn tác.`}
         onConfirm={() => {
           if (truck.id) {
-            removeSavedTruck(truck.id);
+            deleteTruck(truck.id, {
+              onSettled: () => setShowDeleteConfirm(false),
+            });
           }
         }}
         variant="danger"
-        confirmLabel="Xóa"
+        confirmLabel={isDeleting ? "Đang xóa..." : "Xóa"}
       />
     </>
   );

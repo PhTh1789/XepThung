@@ -19,7 +19,7 @@
  */
 import { useState } from "react";
 import { Download, Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { AppToast } from "@/utils/appToast";
 import { useCargoStore } from "@/store/useCargoStore";
 import type { OptimizationData } from "@/services/api.types";
 
@@ -82,9 +82,9 @@ export function ExportActions({ sceneRef, fallbackResult }: ExportActionsProps) 
       pdf.addImage(imgData, "PNG", margin, imgY, imgW, Math.min(imgH, maxImgH));
 
       pdf.save(`xep-hang-${truckName}-${Date.now()}.pdf`);
-      toast.success("Đã xuất PDF thành công!");
+      AppToast.exportSuccess();
     } catch {
-      toast.error("Không thể xuất PDF. Vui lòng thử lại.");
+      AppToast.exportFailed();
     } finally {
       setIsExporting(false);
     }
@@ -96,9 +96,7 @@ export function ExportActions({ sceneRef, fallbackResult }: ExportActionsProps) 
     //   - User chưa đăng nhập → Static mode only, không optimize lại.
     //   - Guest → readonly view.
     //   - Member → full view (nếu được cấp quyền từ người chia sẻ).
-    toast.info("Tính năng chia sẻ sẽ sớm ra mắt!", {
-      description: "Bạn sẽ có thể copy link để chia sẻ kết quả xếp hàng.",
-    });
+    AppToast.comingSoon("Tính năng chia sẻ");
   };
 
   const btnClass = `
