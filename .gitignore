@@ -15,3 +15,4 @@ backEnd/*.db
 # --- System ---
 .DS_Store
 docs/
+Folder_structure.txt
