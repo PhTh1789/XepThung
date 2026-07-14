@@ -30,7 +30,7 @@ export function useOptimizeMutation() {
       if (!validation.isValid) {
         throw new ApiError(validation.errors.join(" | "), "VALIDATION_ERROR");
       }
-      return runOptimization(payload.payload, { signal: payload.signal });
+      return runOptimization(payload.payload, { signal: payload.signal, timeout: 90000 });
     },
 
     onMutate: () => {
@@ -38,7 +38,18 @@ export function useOptimizeMutation() {
       const controller = useAppStore
         .getState()
         .showLoading("Hệ thống đang tính toán phương án xếp hàng tối ưu...", true);
-      return { controller };
+
+      // Smart UX Loading cho Cold Start: Nếu sau 8s chưa xong, đổi thông báo.
+      const timeoutId = setTimeout(() => {
+        useAppStore.setState((state) => ({
+          globalLoading: {
+            ...state.globalLoading,
+            message: "Máy chủ đang khởi động lại từ chế độ ngủ đông. Quá trình này có thể mất tới 60 giây, vui lòng không rời khỏi trang...",
+          },
+        }));
+      }, 8000);
+
+      return { controller, timeoutId };
     },
 
     onSuccess: (result, variables) => {
@@ -74,7 +85,10 @@ export function useOptimizeMutation() {
       console.error("Optimize error:", err);
     },
 
-    onSettled: (_data, _error, _variables, _context) => {
+    onSettled: (_data, _error, _variables, context) => {
+      if (context?.timeoutId) {
+        clearTimeout(context.timeoutId);
+      }
       // Tắt loading overlay dù thành công hay thất bại
       useAppStore.getState().hideLoading();
     },

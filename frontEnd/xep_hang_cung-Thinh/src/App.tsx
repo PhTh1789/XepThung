@@ -10,10 +10,13 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAppStore } from "@/store/useAppStore";
 import { AppToast } from "@/utils/appToast";
+import { useWakeUpBackend } from "@/hooks/queries/useWakeUpBackend";
 
 export default function App() {
   const { setAuthUser, setExplicitLogout, isExplicitLogout } = useAuthStore();
   const { closeAllModals } = useAppStore();
+
+  useWakeUpBackend();
 
   useEffect(() => {
     // Kiểm tra session hiện tại khi app khởi động — xử lý trường hợp page reload.
