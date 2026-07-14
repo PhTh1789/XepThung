@@ -11,10 +11,15 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from app.core.config import get_settings
+import jwt
+import logging
+
+# Setup logger
+logger = logging.getLogger(__name__)    
 
 # FastAPI security scheme – tự động đọc Bearer token từ Header
 bearer_scheme = HTTPBearer(auto_error=False)
-import jwt
+
 
 # ...
 async def _verify_supabase_token(token: str) -> dict:
@@ -25,8 +30,15 @@ async def _verify_supabase_token(token: str) -> dict:
     """
     settings = get_settings()
     # URL lấy JWKS của Supabase
-    jwks_url = f"{settings.SUPABASE_URL}/auth/v1/jwks"
-    jwks_client = jwt.PyJWKClient(jwks_url)
+    jwks_url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+    # Supabase dùng Kong API Gateway đứng trước mọi endpoint /auth/v1/*,
+    # Kong yêu cầu header 'apikey' để định tuyến request — tách biệt hoàn
+    # toàn với việc xác thực JWT của user. Thiếu header này, Kong tự chặn
+    # bằng 401 trước khi request chạm tới Auth service thật sự bên trong.
+    jwks_client = jwt.PyJWKClient(
+        jwks_url,
+        headers={"apikey": settings.SUPABASE_ANON_KEY},
+    )
 
     try:
         # Tự động lấy public key phù hợp (dựa vào 'kid' trong header của token)
@@ -36,7 +48,7 @@ async def _verify_supabase_token(token: str) -> dict:
         payload = jwt.decode(
             token,
             signing_key.key,
-            algorithms=["RS256", "HS256"],  # Hỗ trợ cả 2 để tương thích ngược nếu cần
+            algorithms=["ES256", "RS256", "HS256"],  # Hỗ trợ cả 2 để tương thích ngược nếu cần
             audience="authenticated"
         )
         return payload
@@ -58,7 +70,31 @@ async def _verify_supabase_token(token: str) -> dict:
                 "error_code": "INVALID_TOKEN",
             },
         )
-
+    except jwt.PyJWKClientError as e:
+        # Lỗi khi lấy JWKS public key từ Supabase: sai SUPABASE_URL, mất mạng,
+        # Supabase đang bảo trì/timeout... KHÔNG phải lỗi do token sai.
+        logger.error("Không thể lấy JWKS từ Supabase (%s): %s", jwks_url, str(e))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "status": "error",
+                "message": "Không thể xác thực lúc này. Vui lòng thử lại sau ít phút.",
+                "error_code": "AUTH_SERVICE_UNAVAILABLE",
+            },
+        )
+    except Exception as e:
+        # Safety net cuối cùng: bất kỳ lỗi nào khác chưa lường trước (network,
+        # parsing, v.v.) đều PHẢI biến thành HTTPException, không được để lọt
+        # ra ngoài thành 500 trần trụi (mất CORS header, khó debug từ FE).
+        logger.error("Lỗi xác thực không xác định: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "status": "error",
+                "message": "Không thể xác thực token.",
+                "error_code": "AUTH_VERIFICATION_FAILED",
+            },
+        )
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
