@@ -112,8 +112,16 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
 
       set({ lastSavedHash: resultPayloadHash });
 
+      // Invalidate React Query cache của ["history", "list"] để HistoryPage tự cập nhật
+      // khi user điều hướng sang History sau khi lưu (không cần F5).
+      // Dynamic import để tránh Circular Dependency (pattern đã có ở dòng 66-68).
+      import("@/lib/react-query").then(({ queryClient }) => {
+        queryClient.invalidateQueries({ queryKey: ["history", "list"] });
+      });
+
       AppToast.historySaved(() => useAppStore.getState().setCurrentStep("history"));
       return true;
+
     } catch (err: any) {
       if (err?.name === "CanceledError" || err?.message === "canceled") return false;
       const errorMsg =

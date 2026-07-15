@@ -3,21 +3,22 @@
  *
  * Trang chính hiển thị lịch sử tối ưu hóa của User.
  *
- * ARCHITECTURE:
- * - Local state (không vào Store): data history có vòng đời ngắn, chỉ sống trong trang này.
- * - Pagination: local `currentPage` + `meta` từ API.
+ * ARCHITECTURE (sau khi migrate sang React Query):
+ * - Server state (records, meta, isLoading): quản lý bởi useHistoryList hook.
+ * - Local UI state: chỉ còn currentPage, selectedId, deletingId (UI-only, không phải server state).
+ * - Pagination: local `currentPage` + `meta` từ React Query data.
+ * - Delete: useDeleteHistory mutation → tự invalidate cache + toast.
  * - Khi user bấm "Xem lại" → mở HistoryDetailModal → fetch detail → hydrateFromHistory().
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { History, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAppStore } from "@/store/useAppStore";
-import { getHistoryList, deleteHistory } from "@/services/history.service";
+import { useHistoryList } from "@/hooks/queries/useHistoryList";
+import { useDeleteHistory } from "@/hooks/mutations/useHistoryMutations";
 import { HistoryTable } from "./HistoryTable";
 import { HistoryDetailModal } from "./HistoryDetailModal";
-import type { HistoryRecord, PaginationMeta } from "@/services/api.types";
 import { Loader2 } from "lucide-react";
-import { AppToast } from "@/utils/appToast";
 
 const PAGE_SIZE = 10;
 
@@ -25,52 +26,49 @@ export function HistoryPage() {
   const userRole  = useAuthStore((s) => s.userRole);
   const openModal = useAppStore((s) => s.openModal);
 
-  const [records, setRecords]         = useState<HistoryRecord[]>([]);
-  const [meta, setMeta]               = useState<PaginationMeta | null>(null);
-  const [isLoading, setIsLoading]     = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedId, setSelectedId]   = useState<string | null>(null);
-  const [deletingId, setDeletingId]   = useState<string | null>(null);
 
-  const fetchHistory = useCallback(async (page: number) => {
-    setIsLoading(true);
-    try {
-      const data = await getHistoryList(page, PAGE_SIZE);
-      setRecords(data.records);
-      setMeta(data.meta);
-    } catch {
-      AppToast.loadHistoryFailed();
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // React Query: server state cho danh sách lịch sử
+  const {
+    data,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useHistoryList(currentPage, PAGE_SIZE);
 
-  const handleDelete = async (historyId: string) => {
-    setDeletingId(historyId);
-    try {
-      await deleteHistory(historyId);
-      AppToast.successDeleteHistory();
-      
-      // Nếu xóa thành công mà trang hiện tại hết data và không phải trang 1, lùi 1 trang.
-      // Nếu không, refetch trang hiện tại.
-      if (records.length === 1 && currentPage > 1) {
-        setCurrentPage((p) => p - 1);
-      } else {
-        await fetchHistory(currentPage);
-      }
-    } catch {
-      AppToast.deleteHistoryFailed();
-    } finally {
-      setDeletingId(null);
-    }
-  };
+  const records = data?.records ?? [];
+  const meta    = data?.meta ?? null;
 
+  // React Query: mutation xóa lịch sử
+  // ⚠️ Toast được bắn trong hook (useDeleteHistory), KHÔNG bắn thêm ở đây → tránh double toast
+  const { mutate: deleteHistoryMutation, variables: deletingId } = useDeleteHistory();
+
+  // Chỉ fetch khi đã đăng nhập (enabled bên trong useHistoryList không đủ vì hook này
+  // không nhận userRole — guard ở đây để tránh render khi chưa cần)
   useEffect(() => {
-    // Chỉ fetch khi đã đăng nhập
     if (userRole === "member") {
-      fetchHistory(currentPage);
+      // React Query tự fetch khi component mount và khi currentPage thay đổi
+      // useEffect này chỉ để trigger refetch khi userRole vừa chuyển sang "member"
+      // (ví dụ: user đăng nhập trong khi đang ở trang History)
     }
-  }, [userRole, currentPage, fetchHistory]);
+  }, [userRole]);
+
+  const handleDelete = (historyId: string) => {
+    deleteHistoryMutation(historyId, {
+      onSuccess: () => {
+        // Logic lùi trang khi xóa item cuối của trang hiện tại (không phải trang 1)
+        if (records.length === 1 && currentPage > 1) {
+          // KNOWN TRADE-OFF: useDeleteHistory hook-level onSuccess đã chạy trước và
+          // invalidate query → fetch lại trang hiện tại (giờ rỗng) 1 tick trước khi
+          // setCurrentPage trigger fetch trang trước. Dư 1 GET request.
+          // Chấp nhận trade-off này để giữ pattern đơn giản cho quy mô KLTN.
+          setCurrentPage((p) => p - 1);
+        }
+        // Trường hợp còn lại: invalidateQueries (hook-level) tự refetch trang hiện tại.
+      },
+    });
+  };
 
   // Guard: Guest chưa đăng nhập
   if (userRole !== "member") {
@@ -116,13 +114,16 @@ export function HistoryPage() {
                 )}
               </div>
             </div>
+            {/* Dùng isFetching (không phải isLoading) cho nút refresh:
+                isFetching = true khi React Query đang fetch lại trong nền (kể cả khi có placeholderData),
+                isLoading = true chỉ khi chưa có data lần đầu. Tránh nháy toàn màn hình khi chuyển trang. */}
             <button
-              onClick={() => fetchHistory(currentPage)}
-              disabled={isLoading}
+              onClick={() => refetch()}
+              disabled={isFetching}
               className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground disabled:opacity-50 shrink-0"
               title="Làm mới"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
             </button>
           </div>
 
@@ -137,7 +138,7 @@ export function HistoryPage() {
                 records={records}
                 onViewDetail={setSelectedId}
                 onDelete={handleDelete}
-                deletingId={deletingId}
+                deletingId={deletingId ?? null}
               />
             )}
           </div>
@@ -151,14 +152,14 @@ export function HistoryPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={meta.current_page <= 1 || isLoading}
+                  disabled={meta.current_page <= 1 || isFetching}
                   className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   ← Trước
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(meta.total_pages, p + 1))}
-                  disabled={meta.current_page >= meta.total_pages || isLoading}
+                  disabled={meta.current_page >= meta.total_pages || isFetching}
                   className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Tiếp →

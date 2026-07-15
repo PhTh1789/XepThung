@@ -3,8 +3,13 @@
  *
  * Modal hiển thị chi tiết một bản ghi lịch sử và nút "Xem lại 3D".
  * Khi user bấm "Xem lại 3D" → gọi hydrateFromHistory() → navigate Step 3.
+ *
+ * ARCHITECTURE (sau khi migrate sang React Query):
+ * - Data fetch: useHistoryDetail hook (cache vĩnh viễn vì lịch sử là immutable).
+ * - Error handling: useEffect theo dõi isError (React Query v5 không còn onError ở useQuery).
+ * - enabled: !!historyId → không fetch khi modal đóng.
  */
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +20,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Loader2, Box, BarChart2, Package, PackageX, Truck, Calendar } from "lucide-react";
 import { useHistoryStore } from "@/store/useHistoryStore";
-import { getHistoryDetail } from "@/services/history.service";
-import type { HistoryDetailData } from "@/services/api.types";
+import { useHistoryDetail } from "@/hooks/queries/useHistoryDetail";
 import { AppToast } from "@/utils/appToast";
 
 interface HistoryDetailModalProps {
@@ -42,26 +46,19 @@ const LEVEL_LABEL: Record<string, string> = {
 };
 
 export function HistoryDetailModal({ historyId, onClose }: HistoryDetailModalProps) {
-  const [detail, setDetail] = useState<HistoryDetailData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
   const hydrateFromHistory = useHistoryStore((s) => s.hydrateFromHistory);
 
-  // Fetch detail khi historyId thay đổi
+  // React Query: tự fetch khi historyId có giá trị, tự reset khi historyId = null
+  const { data: detail, isLoading, isError } = useHistoryDetail(historyId);
+
+  // Error handling chuẩn React Query v5: useEffect theo dõi isError
+  // (onError callback tại useQuery đã bị deprecated trong v5)
   useEffect(() => {
-    if (!historyId) {
-      setDetail(null);
-      return;
+    if (isError) {
+      AppToast.loadHistoryDetailFailed();
+      onClose();
     }
-    setIsLoading(true);
-    getHistoryDetail(historyId)
-      .then(setDetail)
-      .catch(() => {
-        AppToast.loadHistoryDetailFailed();
-        onClose();
-      })
-      .finally(() => setIsLoading(false));
-  }, [historyId, onClose]);
+  }, [isError, onClose]);
 
   const handleRestore = () => {
     if (!detail) return;
