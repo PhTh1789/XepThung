@@ -25,7 +25,7 @@ export function ModalSettings() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="md:max-w-md">
         {/* Header - Đồng bộ với AddItemModal */}
         <div className="flex flex-col gap-1 mb-2">
           <DialogTitle className="text-xl font-bold text-foreground">
@@ -38,7 +38,7 @@ export function ModalSettings() {
         </div>
 
         {/* Khối nội dung - Cuộn mượt mà như AddItemModal */}
-        <div className="flex flex-col gap-6 py-2 overflow-y-auto max-h-[65vh] sm:max-h-[75vh] p-1 pr-2 -mr-2">
+        <div className="flex flex-col gap-6 py-2 overflow-y-auto max-h-[65vh] md:max-h-[75vh] p-1 pr-2 -mr-2">
           {/* Chiều dài */}
           <div className="flex flex-col gap-3">
             <label className="text-[14px] font-bold text-foreground">
@@ -175,7 +175,7 @@ export function ModalSettings() {
             type="button"
             variant="primary"
             onClick={closeModal}
-            className="w-full sm:w-auto px-8"
+            className="w-full md:w-auto px-8"
           >
             Lưu cài đặt
           </Button>

@@ -106,7 +106,7 @@ export function ModalLogin() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="p-0 overflow-hidden gap-0">
+      <DialogContent className="p-0 gap-0 md:max-w-[420px]">
         {/* Accessibility */}
         <DialogTitle className="sr-only">Đăng nhập / Đăng ký</DialogTitle>
         <DialogDescription className="sr-only">Biểu mẫu đăng nhập hoặc đăng ký tài khoản</DialogDescription>
@@ -136,7 +136,7 @@ export function ModalLogin() {
         </div>
 
         {/* ── Body ───────────────────────────────────────────────────────── */}
-        <div className="p-6 sm:p-[24px] flex flex-col gap-5 w-full">
+        <div className="p-6 flex flex-col gap-5 w-full">
 
           {isSignupSuccess ? (
             <div className="flex flex-col items-center justify-center py-6 text-center gap-4">

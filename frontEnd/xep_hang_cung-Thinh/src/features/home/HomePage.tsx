@@ -20,10 +20,10 @@ export function HomePage() {
   return (
     <div className="w-full flex flex-col items-center overflow-x-hidden bg-background">
       {/* Hero Section */}
-      <div className="w-full max-w-[1280px] px-6 sm:px-10 min-h-[calc(100vh-80px)] py-12 flex flex-col md:grid md:grid-cols-2 gap-12 items-center justify-center">
+      <div className="w-full max-w-[1280px] px-6 sm:px-10 min-h-[calc(100vh-80px)] py-12 flex flex-col lg:grid lg:grid-cols-2 gap-12 items-center justify-center">
         {/* Left: Text & CTA */}
-        <div className="flex flex-col gap-6 order-2 md:order-1 items-start">
-          <h1 className="font-bold text-4xl sm:text-[40px] text-foreground tracking-tight leading-[1.3] sm:leading-[56px]">
+        <div className="flex flex-col gap-6 order-2 lg:order-1 items-start">
+          <h1 className="font-bold text-4xl md:text-[40px] lg:text-[48px] text-foreground tracking-tight leading-[1.3] md:leading-[56px] lg:leading-[60px]">
             Tối ưu không gian, <br className="hidden xl:block" /> vững vàng tay lái
           </h1>
           <p className="font-normal text-lg sm:text-[18px] text-muted-foreground leading-relaxed sm:leading-[28px]">
@@ -56,7 +56,7 @@ export function HomePage() {
           </div>
         </div>
         
-        <div className="relative w-full aspect-video md:aspect-square rounded-[24px] shadow-md flex items-center justify-center overflow-hidden order-1 md:order-2">
+        <div className="relative w-full max-w-[600px] lg:max-w-none mx-auto aspect-square lg:aspect-[4/3] rounded-[24px] shadow-md flex items-center justify-center overflow-hidden order-1 lg:order-2">
           {/* 3D simulation image */}
           <img 
             src={imgHome} 
@@ -78,7 +78,7 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
             {/* Step 1 */}
             <div className="bg-background border border-border/50 rounded-[24px] p-8 flex flex-col gap-4 shadow-md relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
               <div className="w-16 h-16 rounded-[16px] bg-primary flex items-center justify-center text-white z-10">
@@ -111,7 +111,7 @@ export function HomePage() {
 
             {/* Step 3 */}
             <div className="bg-background border border-border/50 rounded-[24px] p-8 flex flex-col gap-4 shadow-md relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-              <div className="w-16 h-16 rounded-[16px] bg-accent flex items-center justify-center text-accent-foreground z-10">
+              <div className="w-16 h-16 rounded-[16px] bg-success-600 flex items-center justify-center text-white z-10">
                 <MonitorSmartphone className="w-8 h-8" />
               </div>
               <div className="flex items-center gap-3 z-10 pt-2">
@@ -121,7 +121,7 @@ export function HomePage() {
               <p className="text-base text-muted-foreground z-10 leading-relaxed">
                 Xem kết quả 2D/3D trực quan, theo dõi hướng dẫn sắp xếp từng bước và xuất PDF/Excel.
               </p>
-              <div className="absolute -top-8 -right-8 w-24 h-24 bg-accent/10 rounded-bl-3xl transition-transform duration-500 group-hover:scale-[2.5]" />
+              <div className="absolute -top-8 -right-8 w-24 h-24 bg-success-600/10 rounded-bl-3xl transition-transform duration-500 group-hover:scale-[2.5]" />
             </div>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function HomePage() {
             Lợi ích vượt trội
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
             {/* Feature 1 */}
             <div className="flex flex-col items-center text-center p-6 gap-3">
               <div className="w-20 h-20 rounded-[24px] bg-primary/10 flex items-center justify-center mb-4 text-primary">

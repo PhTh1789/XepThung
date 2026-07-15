@@ -249,7 +249,7 @@ export function AddItemModal({
           </div>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col">
-          <div className="overflow-y-auto max-h-[65vh] sm:max-h-[75vh] p-1 space-y-4 pr-2 -mr-2">
+          <div className="overflow-y-auto max-h-[65vh] md:max-h-[75vh] p-1 space-y-4 pr-2 -mr-2">
           {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-text-primary mb-1">
