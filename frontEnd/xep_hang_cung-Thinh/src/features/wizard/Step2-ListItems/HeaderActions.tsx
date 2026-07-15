@@ -4,6 +4,7 @@ import { useCargoStore } from "@/store/useCargoStore";
 import type { OptimizationLevel } from "@/store/useCargoStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { LIMITS } from "@/lib/constants";
+import { AppToast } from "@/utils/appToast";
 
 const { guestMaxItems } = LIMITS;
 
@@ -111,14 +112,18 @@ export function HeaderActions({ onAddClick }: HeaderActionsProps) {
         {/* Nut Them hang hoa */}
         <Button
           variant="primary"
-          onClick={onAddClick}
-          disabled={isGuestLimitReached}
-          title={
-            isGuestLimitReached
-              ? `Tài khoản Khách chỉ được thêm tối đa ${guestMaxItems} kiện hàng`
-              : ""
-          }
-          className="gap-1.5 px-4 py-1.5 text-sm whitespace-nowrap w-full sm:w-auto h-8"
+          onClick={(e) => {
+            if (isGuestLimitReached) {
+              e.preventDefault();
+              AppToast.guestLimitExceeded(guestMaxItems);
+              return;
+            }
+            onAddClick();
+          }}
+          aria-disabled={isGuestLimitReached}
+          className={`gap-1.5 px-4 py-1.5 text-sm whitespace-nowrap w-full sm:w-auto h-8 ${
+            isGuestLimitReached ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         >
           <Plus className="w-4 h-4" />
           Thêm hàng hóa

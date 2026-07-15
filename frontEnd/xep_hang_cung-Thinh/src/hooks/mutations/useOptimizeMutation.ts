@@ -30,6 +30,14 @@ export function useOptimizeMutation() {
       if (!validation.isValid) {
         throw new ApiError(validation.errors.join(" | "), "VALIDATION_ERROR");
       }
+
+      // Lớp phòng thủ thứ 2 (Trường hợp API call trực tiếp không qua UI)
+      const { userRole } = (await import("@/store/useAuthStore")).useAuthStore.getState();
+      const totalItems = state.getItemsCount();
+      if (userRole === "guest" && totalItems > 50) {
+        throw new ApiError("Tài khoản Khách chỉ hỗ trợ tối đa 50 kiện hàng. Vui lòng đăng nhập để xếp nhiều hơn.", "GUEST_LIMIT");
+      }
+
       return runOptimization(payload.payload, { signal: payload.signal, timeout: 90000 });
     },
 
@@ -38,6 +46,9 @@ export function useOptimizeMutation() {
       const controller = useAppStore
         .getState()
         .showLoading("Hệ thống đang tính toán phương án xếp hàng tối ưu...", true);
+
+      // State Sanitization: Xóa trắng kết quả cũ (Ghost State) để UI hiện Loading/Error chuẩn
+      useCargoStore.setState({ optimizationResult: null, optimizationError: null });
 
       // Smart UX Loading cho Cold Start: Nếu sau 8s chưa xong, đổi thông báo.
       const timeoutId = setTimeout(() => {

@@ -9,6 +9,7 @@ import { AlertDialog } from "@/components/ui/AlertDialog";
 import { useItemLibrary } from "@/hooks/queries/useItemLibrary";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Button } from "@/components/ui/Button";
+import { AppToast } from "@/utils/appToast";
 
 const { guestMaxItems } = LIMITS;
 
@@ -57,12 +58,18 @@ export function ItemPresets({ onSelect }: ItemPresetsProps) {
             <button
               key={preset.id}
               type="button"
-              disabled={isGuestLimitReached}
-              onClick={() => onSelect({ ...preset, quantity: 1 })}
+              onClick={(e) => {
+                if (isGuestLimitReached) {
+                  e.preventDefault();
+                  AppToast.guestLimitExceeded(guestMaxItems);
+                  return;
+                }
+                onSelect({ ...preset, quantity: 1 });
+              }}
+              aria-disabled={isGuestLimitReached}
               className={`flex flex-col bg-background p-2.5 rounded-xl border border-border shadow-sm transition-all text-left w-full h-full group ${
                 isGuestLimitReached ? "opacity-50 cursor-not-allowed" : "hover:border-primary hover:bg-primary/5"
               }`}
-              title={isGuestLimitReached ? `Khách chỉ được thêm tối đa ${guestMaxItems} kiện hàng` : ""}
             >
               <div className="flex items-center gap-2 mb-2">
                 <div

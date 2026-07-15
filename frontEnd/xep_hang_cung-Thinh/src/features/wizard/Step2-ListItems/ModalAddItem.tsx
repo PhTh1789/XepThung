@@ -35,6 +35,7 @@ import { LIMITS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { DimensionFields } from "./DimensionFields";
 import { ColorSelector } from "./ColorSelector";
+import { AppToast } from "@/utils/appToast";
 
 const { guestMaxItems } = LIMITS;
 
@@ -192,8 +193,9 @@ export function AddItemModal({
     if (Number(data.quantity) > maxAllowedQuantity) {
       setError("quantity", {
         type: "manual",
-        message: `Tài khoản Khách chỉ được thêm tối đa ${maxAllowedQuantity} kiện hàng nữa`,
+        message: `Tài khoản Khách giới hạn 50 kiện. Đã dùng ${totalItems - currentQuantity}/50. Tối đa thêm ${maxAllowedQuantity} kiện.`,
       });
+      AppToast.guestLimitExceeded(guestMaxItems);
       return;
     }
 

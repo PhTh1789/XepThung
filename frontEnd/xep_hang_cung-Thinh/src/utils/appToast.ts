@@ -10,14 +10,39 @@
  */
 import { toast } from "sonner";
 
+const showGuestGuardToast = (title: string, description: string) => {
+  return toast.warning(title, {
+    description,
+    action: {
+      label: "Đăng nhập",
+      onClick: () => {
+        import("@/store/useAppStore").then(({ useAppStore }) => {
+          useAppStore.getState().openModal("auth");
+        });
+      },
+    },
+    actionButtonStyle: {
+      backgroundColor: "var(--primary)",
+      color: "var(--primary-foreground)",
+    },
+  });
+};
+
 export const AppToast = {
   // ═══════════════════════════════════════════════════════════
   // WIZARD GUARD ERRORS
   // ═══════════════════════════════════════════════════════════
   memberOnlyFeature: (featureName: string = "tính năng này") =>
-    toast.warning("Yêu cầu đăng nhập", {
-      description: `Bạn cần đăng nhập để sử dụng ${featureName}.`,
-    }),
+    showGuestGuardToast(
+      "Yêu cầu đăng nhập",
+      `Bạn cần đăng nhập để sử dụng ${featureName}.`
+    ),
+
+  guestLimitExceeded: (max: number = 50) =>
+    showGuestGuardToast(
+      "Vượt quá giới hạn Khách",
+      `Tài khoản Khách chỉ hỗ trợ tối đa ${max} kiện hàng. Vui lòng đăng nhập để xếp nhiều hơn.`
+    ),
 
   sessionLost: () =>
     toast.error("Vui lòng chọn xe tải trước", {

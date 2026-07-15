@@ -180,14 +180,24 @@ export const useAppStore = create<AppStore>()(
 
       // 4. Execution logic for Step 3 (Optimization)
       if (destination === "step3") {
-        const currentHash = buildPayloadHash(cargoState.truck, cargoState.items);
-        if (cargoState.optimizationResult && currentHash === cargoState.resultPayloadHash) {
-          // Cache hit: Data chưa thay đổi, chuyển màn hình ngay
-          set({ currentStep: "step3" });
-          return;
-        }
-        // Cache miss: Emit signal để useOptimizeMutation trong Step3-Result tự trigger
-        set({ currentStep: "step3", optimizeSignal: get().optimizeSignal + 1 });
+        import("./useAuthStore").then(({ useAuthStore }) => {
+          const { userRole } = useAuthStore.getState();
+          const totalItems = cargoState.getItemsCount();
+          
+          if (userRole === "guest" && totalItems > 50) {
+            AppToast.guestLimitExceeded(50);
+            return;
+          }
+
+          const currentHash = buildPayloadHash(cargoState.truck, cargoState.items);
+          if (cargoState.optimizationResult && currentHash === cargoState.resultPayloadHash) {
+            // Cache hit: Data chưa thay đổi, chuyển màn hình ngay
+            set({ currentStep: "step3" });
+            return;
+          }
+          // Cache miss: Emit signal để useOptimizeMutation trong Step3-Result tự trigger
+          set({ currentStep: "step3", optimizeSignal: get().optimizeSignal + 1 });
+        });
         return;
       }
 
