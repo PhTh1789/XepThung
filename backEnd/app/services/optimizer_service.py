@@ -101,7 +101,8 @@ def _apply_yz_swap(pos_x: float, pos_y: float, pos_z: float,
 # Core: Chạy py3dbp và parse kết quả
 # ─────────────────────────────────────────────────────────────────────────────
 def _run_packer(request: OptimizeRequest,
-                ordered_items: List[Dict[str, Any]]) -> Tuple[List[PackedItem], List[UnpackedItem]]:
+                ordered_items: List[Dict[str, Any]],
+                bigger_first: bool = True) -> Tuple[List[PackedItem], List[UnpackedItem], GravityBin]:
     """
     Tạo Packer, thêm Bin (thùng xe) và các Items theo thứ tự đã cho,
     chạy pack(), sau đó parse kết quả thành schema.
@@ -111,7 +112,7 @@ def _run_packer(request: OptimizeRequest,
         ordered_items: Danh sách dict item theo thứ tự tối ưu (sau PyGAD nếu deep).
 
     Returns:
-        (packed_items, unpacked_items)
+        (packed_items, unpacked_items, fitted_bin)
     """
     truck = request.truck
     packer = GravityPacker()
@@ -158,7 +159,7 @@ def _run_packer(request: OptimizeRequest,
             }
 
     packer.pack(
-        bigger_first=True,       # Ưu tiên xếp kiện lớn trước
+        bigger_first=bigger_first,
         distribute_items=False,
         number_of_decimals=0,
     )
@@ -209,7 +210,7 @@ def _run_packer(request: OptimizeRequest,
             name=meta["name"],
         ))
 
-    return packed_items, unpacked_items
+    return packed_items, unpacked_items, fitted_bin
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -224,7 +225,7 @@ def run_fast_optimization(request: OptimizeRequest) -> OptimizeData:
                 len(request.items))
 
     ordered_items = [item.model_dump() for item in request.items]
-    packed, unpacked = _run_packer(request, ordered_items)
+    packed, unpacked, _ = _run_packer(request, ordered_items)
 
     return _build_optimize_data(request, packed, unpacked, resolved_mode="fast")
 
@@ -263,14 +264,25 @@ def run_deep_optimization(request: OptimizeRequest) -> OptimizeData:
         ordered = [items_data[i] for i in order]
 
         try:
-            packed, _ = _run_packer(request, ordered)
+            packed, _, fitted_bin = _run_packer(request, ordered, bigger_first=False)
             if truck_volume == 0:
                 return 0.0
             packed_volume = sum(
                 p.dimensions.length * p.dimensions.width * p.dimensions.height
                 for p in packed
             )
-            return (packed_volume / truck_volume) * 100
+            fill_rate = (packed_volume / truck_volume) * 100
+            
+            # Tinh toan can bang tai
+            balance_penalty = fitted_bin.compute_weight_balance()
+            
+            # Fitness da muc tieu: Fill Rate (cang cao cang tot) - Penalty Can Bang (cang nho cang tot)
+            # BALANCE_WEIGHT quyết định mức độ ưu tiên của việc cân bằng tải.
+            # Với fill_rate thuộc [0, 100] và balance_penalty thuộc [0, 1.414],
+            # nhân balance_penalty với một trọng số để nó ảnh hưởng vài % đến fitness.
+            BALANCE_WEIGHT = 10.0
+            fitness = fill_rate - (balance_penalty * BALANCE_WEIGHT)
+            return fitness
         except Exception:
             return 0.0
 
@@ -302,32 +314,53 @@ def run_deep_optimization(request: OptimizeRequest) -> OptimizeData:
     num_generations = max(12, int(50 / (1 + 0.015 * max(0, num_items - 5))))
     logger.info("[DEEP] Dynamic scaling: num_items=%d -> num_generations=%d", num_items, num_generations)
 
-    ga_instance = pygad.GA(
-        num_generations=num_generations,
-        num_parents_mating=4,
-        fitness_func=fitness_func,
-        sol_per_pop=max(8, num_items * 2),   # Tối thiểu 8 cá thể mỗi thế hệ
-        num_genes=num_items,
-        gene_type=float,
-        init_range_low=0.0,
-        init_range_high=float(num_items),
-        mutation_percent_genes=20,
-        crossover_type="single_point",
-        mutation_type="random",
-        keep_parents=2,
-        suppress_warnings=True,
-    )
+    # ── Iterated Local Search (ILS) / Multi-Start GA ──────────────────────
+    import time
+    start_time = time.time()
+    max_duration = 4.0  # Chạy tối đa 4 giây để đảm bảo API phản hồi nhanh
+    
+    global_best_solution = None
+    global_best_fitness = -1000.0  # Có thể âm do penalty
+    ils_iterations = 0
 
-    ga_instance.run()
+    while time.time() - start_time < max_duration:
+        ils_iterations += 1
+        ga_instance = pygad.GA(
+            num_generations=num_generations,
+            num_parents_mating=4,
+            fitness_func=fitness_func,
+            sol_per_pop=max(8, num_items * 2),   # Tối thiểu 8 cá thể mỗi thế hệ
+            num_genes=num_items,
+            gene_type=float,
+            init_range_low=0.0,
+            init_range_high=float(num_items),
+            mutation_percent_genes=20,
+            crossover_type="single_point",
+            mutation_type="random",
+            keep_parents=2,
+            suppress_warnings=True,
+        )
 
-    # Lấy giải pháp tốt nhất
-    best_solution, best_fitness, _ = ga_instance.best_solution()
-    best_order = np.argsort(best_solution).tolist()
+        ga_instance.run()
+
+        # Lấy giải pháp tốt nhất của iteration này
+        solution, fitness, _ = ga_instance.best_solution()
+        
+        if fitness > global_best_fitness:
+            global_best_fitness = fitness
+            global_best_solution = solution
+            
+        # Nếu fill_rate đạt 100% (và không bị penalty), thoát sớm
+        if fitness >= 100.0:
+            break
+
+    logger.info("🧬 [DEEP] ILS ran %d iterations in %.2fs. Best fitness (Fill Rate - Penalty): %.2f", 
+                ils_iterations, time.time() - start_time, global_best_fitness)
+
+    best_order = np.argsort(global_best_solution).tolist()
     best_ordered_items = [items_data[i] for i in best_order]
 
-    logger.info("🧬 [DEEP] Best fitness (fill rate): %.2f%%", best_fitness)
-
-    packed, unpacked = _run_packer(request, best_ordered_items)
+    packed, unpacked, _ = _run_packer(request, best_ordered_items, bigger_first=False)
     return _build_optimize_data(request, packed, unpacked, resolved_mode="deep")
 
 

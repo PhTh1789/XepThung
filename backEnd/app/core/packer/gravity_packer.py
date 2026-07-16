@@ -4,15 +4,17 @@ app/core/packer/gravity_packer.py
 Custom Packer co Gravity Constraint (trọng lực và bệ đỡ).
 
 Ke thua truc tiep tu py3dbp.Bin va py3dbp.Packer de giu nguyen
-toan bo Extreme Point Heuristic goc, chi bo sung them Hard Constraint:
-moi item dat len cao phai duoc do it nhat MIN_SUPPORT_RATIO (60%)
-dien tich day boi cac item da xep ben duoi hoac san thung xe.
+cau truc co ban, bo sung them Hard Constraint (Gravity/Support)
+va LBD Compaction (Left-Back-Down).
 
-Architectural Pattern: Template Method (Class Inheritance).
-Ly do chon: Khong pha vo thu vien goc, de test doc lap,
-de trinh bay trong bao cao KLTN (muc "Cai tien thuat toan").
+Kien truc that su cua thuat toan nay:
+Corner-point 3n + LBD Compact + 6 Rotations.
+- Khong phai "Extreme Point Heuristic" day du (khong sinh diem giao dien).
+- LBD (truot don nen) ket hop voi 6 kieu xoay giup lap day cac khe ho hinh L,
+  mang lai hieu qua xep hang tuong duong EP tren thuc te co Support Constraint.
 
 Time Complexity:
+  - Toan bo qua trinh pack: O(n^3) worst-case (n lan dat item * O(n) pivot * O(n) intersection check)
   - _check_physical_support(): O(N) worst-case nhung ap dung
     Bounding Box Filter (early-exit) nen amortized chi 2-5 items
     moi lan check trong thuc te.
@@ -256,14 +258,62 @@ class GravityBin(Bin):
             item1.position[2] + d1[2] > item2.position[2]
         )
 
+    def compute_weight_balance(self) -> float:
+        """
+        Tinh toan do lech trong tam (Center of Gravity - CoG) cua thung xe
+        tren mat phang XZ (mat san).
+        
+        Cong thuc:
+        X_cg = sum(weight_i * X_center_i) / total_weight
+        Z_cg = sum(weight_i * Z_center_i) / total_weight
+
+        Tra ve khoang cach Euclide tu CoG den tam hinh hoc cua thung xe,
+        duoc chuan hoa theo kich thuoc thung xe (0.0 -> 1.0, cang gan 0 cang tot).
+        """
+        if not self.items:
+            return 0.0
+
+        total_weight = 0.0
+        sum_wx = 0.0
+        sum_wz = 0.0
+
+        for item in self.items:
+            w = float(item.weight)
+            dim = item.get_dimension()
+            # Tam hinh hoc cua item (tren truc X va Z)
+            x_center = float(item.position[0]) + float(dim[0]) / 2.0
+            z_center = float(item.position[2]) + float(dim[2]) / 2.0
+
+            sum_wx += w * x_center
+            sum_wz += w * z_center
+            total_weight += w
+
+        if total_weight == 0:
+            return 0.0
+
+        x_cg = sum_wx / total_weight
+        z_cg = sum_wz / total_weight
+
+        bin_x_center = float(self.width) / 2.0
+        bin_z_center = float(self.depth) / 2.0
+
+        # Khoang cach lech tuyet doi
+        delta_x = abs(x_cg - bin_x_center)
+        delta_z = abs(z_cg - bin_z_center)
+
+        # Chuan hoa ve khoang [0, 1] bang cach chia cho nua chieu dai tuong ung
+        norm_delta_x = delta_x / bin_x_center if bin_x_center > 0 else 0
+        norm_delta_z = delta_z / bin_z_center if bin_z_center > 0 else 0
+
+        # Dung khoang cach Euclide chuan hoa tren mat phang 2D
+        return (norm_delta_x**2 + norm_delta_z**2)**0.5
+
 
 class GravityPacker(Packer):
     """
     Packer su dung GravityBin thay vi Bin goc.
 
-    Override pack_to_bin() de dam bao luan ly tim pivot
-    van giong py3dbp goc, chi khac o cho Bin duoc thay
-    bang GravityBin (co kiem tra trong luc).
+    Kien truc: Corner-point 3n + LBD Compact + 6 Rotations.
     """
 
     def add_gravity_bin(self, name, width, height, depth, max_weight) -> GravityBin:
@@ -277,12 +327,11 @@ class GravityPacker(Packer):
 
     def pack_to_bin(self, bin: GravityBin, item: Item):
         """
-        Tim vi tri dat item trong bin. Logic giong het py3dbp goc:
+        Tim vi tri dat item trong bin theo thuat toan Corner-point 3n.
         - Item dau tien: dat tai goc (0,0,0).
         - Cac item sau: thu 3 pivot (WIDTH, HEIGHT, DEPTH) cua moi item da xep.
 
-        Khac biet duy nhat: bin.put_item() bay gio la GravityBin.put_item()
-        co kiem tra Gravity Constraint.
+        Do phuc tap: O(n^3) cho toan bo qua trinh pack.
         """
         fitted = False
 
